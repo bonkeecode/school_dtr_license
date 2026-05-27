@@ -1,0 +1,31 @@
+{
+  "version": 2,
+  "dgSpecHash": "Xi4zIjzRaJE=",
+  "success": true,
+  "projectFilePath": "E:\\CityMatiNHS_DTR_System_Starter\\src\\SchoolDTR\\SchoolDTR.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\HPNT\\.nuget\\packages\\bouncycastle.cryptography\\2.6.2\\bouncycastle.cryptography.2.6.2.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\google.protobuf\\3.32.0\\google.protobuf.3.32.0.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\k4os.compression.lz4\\1.3.8\\k4os.compression.lz4.1.3.8.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\k4os.compression.lz4.streams\\1.3.8\\k4os.compression.lz4.streams.1.3.8.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\k4os.hash.xxhash\\1.0.8\\k4os.hash.xxhash.1.0.8.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.2\\microsoft.extensions.dependencyinjection.abstractions.8.0.2.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\8.0.2\\microsoft.extensions.logging.abstractions.8.0.2.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\mysql.data\\9.7.0\\mysql.data.9.7.0.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\mysqlconnector\\2.5.0\\mysqlconnector.2.5.0.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\system.codedom\\10.0.8\\system.codedom.10.0.8.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\system.configuration.configurationmanager\\8.0.0\\system.configuration.configurationmanager.8.0.0.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\system.diagnostics.eventlog\\8.0.0\\system.diagnostics.eventlog.8.0.0.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\system.io.pipelines\\6.0.3\\system.io.pipelines.6.0.3.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\system.management\\10.0.8\\system.management.10.0.8.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\system.security.cryptography.protecteddata\\8.0.0\\system.security.cryptography.protecteddata.8.0.0.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\system.security.permissions\\8.0.0\\system.security.permissions.8.0.0.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\system.windows.extensions\\8.0.0\\system.windows.extensions.8.0.0.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\zstdsharp.port\\0.8.6\\zstdsharp.port.0.8.6.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.27\\microsoft.aspnetcore.app.ref.8.0.27.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\8.0.27\\microsoft.netcore.app.host.win-x64.8.0.27.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.27\\microsoft.netcore.app.ref.8.0.27.nupkg.sha512",
+    "C:\\Users\\HPNT\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.27\\microsoft.windowsdesktop.app.ref.8.0.27.nupkg.sha512"
+  ],
+  "logs": []
+}

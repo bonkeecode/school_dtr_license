@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "E:\\CityMatiNHS_DTR_System_Starter\\src\\SchoolDTR\\SchoolDTR.csproj": {}
+    "E:\\CityMatiNHS_DTR_System_Starter\\src\\SchoolDTR\\school_dtr_license\\SchoolDTR.csproj": {}
   },
   "projects": {
-    "E:\\CityMatiNHS_DTR_System_Starter\\src\\SchoolDTR\\SchoolDTR.csproj": {
+    "E:\\CityMatiNHS_DTR_System_Starter\\src\\SchoolDTR\\school_dtr_license\\SchoolDTR.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "E:\\CityMatiNHS_DTR_System_Starter\\src\\SchoolDTR\\SchoolDTR.csproj",
+        "projectUniqueName": "E:\\CityMatiNHS_DTR_System_Starter\\src\\SchoolDTR\\school_dtr_license\\SchoolDTR.csproj",
         "projectName": "SchoolDTR",
-        "projectPath": "E:\\CityMatiNHS_DTR_System_Starter\\src\\SchoolDTR\\SchoolDTR.csproj",
+        "projectPath": "E:\\CityMatiNHS_DTR_System_Starter\\src\\SchoolDTR\\school_dtr_license\\SchoolDTR.csproj",
         "packagesPath": "C:\\Users\\HPNT\\.nuget\\packages\\",
-        "outputPath": "E:\\CityMatiNHS_DTR_System_Starter\\src\\SchoolDTR\\obj\\",
+        "outputPath": "E:\\CityMatiNHS_DTR_System_Starter\\src\\SchoolDTR\\school_dtr_license\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\HPNT\\AppData\\Roaming\\NuGet\\NuGet.Config"

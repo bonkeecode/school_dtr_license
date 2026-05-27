@@ -1,15 +1,26 @@
-using SchoolDTR;
+using SchoolDTR.Services;
 
 namespace SchoolDTR.Models;
 
 public sealed class BiometricDeviceSettings
 {
-    public string SchoolId { get; set; } = AppConfig.SchoolCode;
-    public string DeviceModel { get; set; } = "ZKTeco K14";
-    public string DeviceIp { get; set; } = "192.168.1.201";
-    public int DevicePort { get; set; } = 4370;
-    public int MachineNumber { get; set; } = 1;
+    public string SchoolId { get; set; }
+    public string DeviceModel { get; set; }
+    public string DeviceIp { get; set; }
+    public int DevicePort { get; set; }
+    public int MachineNumber { get; set; }
     public string? DeviceSerial { get; set; }
+
+    public BiometricDeviceSettings()
+    {
+        var settings = AppSettingsService.Load();
+
+        SchoolId = settings.SchoolId;
+        DeviceModel = settings.DeviceModel;
+        DeviceIp = settings.DeviceIp;
+        DevicePort = settings.DevicePort;
+        MachineNumber = settings.MachineNumber;
+    }
 }
 
 public sealed class BiometricFetchResult

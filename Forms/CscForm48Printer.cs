@@ -4,6 +4,10 @@ using SchoolDTR.Models;
 
 namespace SchoolDTR.Forms;
 
+
+
+
+
 public static class CscForm48Printer
 {
     public static void DrawForm(Graphics g, Rectangle bounds, EmployeeDtrPrintData data)
@@ -138,12 +142,35 @@ public static class CscForm48Printer
 
             if (row != null)
             {
-                DrawCell(g, row.MorningIn, fontSmall, tableX + colDay, y, colMorningArr, rowH);
-                DrawCell(g, row.MorningOut, fontSmall, tableX + colDay + colMorningArr, y, colMorningDep, rowH);
+                // Correct mapping:
+                // Morning Arrival  -> MorningIn
+                // Morning Departure -> MorningOut
+                // Afternoon Arrival -> AfternoonIn
+                // Afternoon Departure -> AfternoonOut
 
                 DrawCell(
                     g,
-                    $"{row.AfternoonIn}",
+                    row.MorningIn ?? "",
+                    fontSmall,
+                    tableX + colDay,
+                    y,
+                    colMorningArr,
+                    rowH
+                );
+
+                DrawCell(
+                    g,
+                    row.MorningOut ?? "",
+                    fontSmall,
+                    tableX + colDay + colMorningArr,
+                    y,
+                    colMorningDep,
+                    rowH
+                );
+
+                DrawCell(
+                    g,
+                    row.AfternoonIn ?? "",
                     fontSmall,
                     tableX + colDay + colMorningArr + colMorningDep,
                     y,
@@ -151,28 +178,23 @@ public static class CscForm48Printer
                     rowH
                 );
 
-                DrawCell(g, row.AfternoonOut, fontSmall,
+                DrawCell(
+                    g,
+                    row.AfternoonOut ?? "",
+                    fontSmall,
                     tableX + colDay + colMorningArr + colMorningDep + colAfternoonArr,
                     y,
                     colAfternoonDep,
-                    rowH);
+                    rowH
+                );
             }
             else
             {
-                DrawCell(g, row.MorningIn, fontSmall, tableX + colDay, y, colMorningArr, rowH);
-                DrawCell(g, row.MorningOut, fontSmall, tableX + colDay + colMorningArr, y, colMorningDep, rowH);
-
-                DrawCell(
-                    g,
-                    $"{row.AfternoonIn}",
-                    fontSmall,
-                    tableX + colDay + colMorningArr + colMorningDep,
-                    y,
-                    colAfternoonArr,
-                    rowH
-                );
-
-                DrawCell(g, row.AfternoonOut, fontSmall,
+                // Empty row
+                DrawCell(g, "", fontSmall, tableX + colDay, y, colMorningArr, rowH);
+                DrawCell(g, "", fontSmall, tableX + colDay + colMorningArr, y, colMorningDep, rowH);
+                DrawCell(g, "", fontSmall, tableX + colDay + colMorningArr + colMorningDep, y, colAfternoonArr, rowH);
+                DrawCell(g, "", fontSmall,
                     tableX + colDay + colMorningArr + colMorningDep + colAfternoonArr,
                     y,
                     colAfternoonDep,

@@ -14,4 +14,6 @@ public static class AppConfig
 
     // Temporary. Later, get this from the actual biometric device.
     public const string DefaultBiometricSerial = "TO_BE_REPLACED_WITH_DEVICE_SERIAL";
+    public static string LicenseJsonUrl =
+    "https://raw.githubusercontent.com/bonkeecode/school_dtr_license/c85bbc1308b74b880d53ec46a37f24c03a944958/tools/school-dtr-licenses.json";
 }

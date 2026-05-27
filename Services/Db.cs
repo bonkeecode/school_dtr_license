@@ -4,23 +4,20 @@ namespace SchoolDTR.Services;
 
 public static class Db
 {
-    // ==========================================================
-    // DATABASE CONNECTION
-    // ==========================================================
-    // Update this if database credentials change.
-    //
-    // Example:
-    // server=localhost;
-    // database=school_dtr_305680;
-    // uid=root;
-    // pwd=YOUR_PASSWORD;
-    // ==========================================================
-
-    private const string ConnectionString =
-        "server=localhost;database=school_dtr_305680;uid=root;pwd=#P4ssword1;";
-
     public static MySqlConnection GetConnection()
     {
-        return new MySqlConnection(ConnectionString);
+        var s = AppSettingsService.Load();
+
+        var csb = new MySqlConnectionStringBuilder
+        {
+            Server = s.DbHost,
+            Database = s.DbName,
+            UserID = s.DbUser,
+            Password = s.DbPassword,
+            SslMode = MySqlSslMode.None,
+            AllowUserVariables = true
+        };
+
+        return new MySqlConnection(csb.ConnectionString);
     }
 }

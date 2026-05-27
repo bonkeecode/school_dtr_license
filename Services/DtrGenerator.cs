@@ -107,7 +107,6 @@ public static class DtrGenerator
             cmd.Parameters.AddWithValue("@log_date", date.Date);
 
             using var reader = cmd.ExecuteReader();
-            
 
             DateTime? morningIn = null;
             DateTime? morningOut = null;
@@ -119,7 +118,11 @@ public static class DtrGenerator
                 var log = reader.GetDateTime("punch_time");
                 var time = log.TimeOfDay;
 
-                // Morning IN: 04:00 AM - 11:59 AM (earliest)
+                // ===============================
+                // MORNING IN
+                // 04:00 AM - 11:59 AM
+                // Earliest log
+                // ===============================
                 if (time >= new TimeSpan(4, 0, 0) &&
                     time <= new TimeSpan(11, 59, 59))
                 {
@@ -127,23 +130,29 @@ public static class DtrGenerator
                         morningIn = log;
                 }
 
-                // Noon range (shared for Morning OUT + Afternoon IN)
+                // ===============================
+                // NOON WINDOW
+                // 12:00 PM - 02:59 PM
+                // Morning OUT = earliest
+                // Afternoon IN = latest
+                // ===============================
                 if (time >= new TimeSpan(12, 0, 0) &&
-                    time <= new TimeSpan(12, 59, 59))
+                    time <= new TimeSpan(14, 59, 59))
                 {
-                    // Morning OUT = latest noon log
-                    if (morningOut == null || log > morningOut)
+                    // Morning OUT = earliest noon punch
+                    if (morningOut == null || log < morningOut)
                         morningOut = log;
 
-                    // Afternoon IN = earliest after 12:01
-                    if (time >= new TimeSpan(12, 1, 0))
-                    {
-                        if (afternoonIn == null || log < afternoonIn)
-                            afternoonIn = log;
-                    }
+                    // Afternoon IN = latest noon punch
+                    if (afternoonIn == null || log > afternoonIn)
+                        afternoonIn = log;
                 }
 
-                // Afternoon OUT: 03:00 PM onwards (latest)
+                // ===============================
+                // AFTERNOON OUT
+                // 03:00 PM onwards
+                // Latest log
+                // ===============================
                 if (time >= new TimeSpan(15, 0, 0))
                 {
                     if (afternoonOut == null || log > afternoonOut)

@@ -1,7 +1,5 @@
 using System;
 using System.Drawing;
-using System.Reflection;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using SchoolDTR.Forms;
 
@@ -14,8 +12,9 @@ public class MainForm : Form
     public MainForm()
     {
         Text = "City of Mati National High School (CMNHS) - 305680 DTR System";
-        Width = 1000;
-        Height = 650;
+        Width = 1150;
+        Height = 780;
+        MinimumSize = new Size(1050, 720);
         StartPosition = FormStartPosition.CenterScreen;
 
         BuildUi();
@@ -32,7 +31,7 @@ public class MainForm : Form
         };
 
         main.RowStyles.Add(new RowStyle(SizeType.Absolute, 55));
-        main.RowStyles.Add(new RowStyle(SizeType.Absolute, 180));
+        main.RowStyles.Add(new RowStyle(SizeType.Absolute, 350));
         main.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
         var title = new Label
@@ -47,14 +46,16 @@ public class MainForm : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 4,
-            RowCount = 2
+            RowCount = 4
         };
 
+        buttonPanel.ColumnStyles.Clear();
         for (int i = 0; i < 4; i++)
             buttonPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
 
-        buttonPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
-        buttonPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+        buttonPanel.RowStyles.Clear();
+        for (int i = 0; i < 4; i++)
+            buttonPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 82));
 
         buttonPanel.Controls.Add(MakeButton("Device Setup", () => OpenForm("DeviceSetupForm")), 0, 0);
         buttonPanel.Controls.Add(MakeButton("Fetch Logs", FetchLogs), 1, 0);
@@ -65,6 +66,13 @@ public class MainForm : Form
         buttonPanel.Controls.Add(MakeButton("View DTR", () => OpenForm("DtrViewerForm")), 1, 1);
         buttonPanel.Controls.Add(MakeButton("Raw Logs", () => OpenForm("RawLogsForm")), 2, 1);
         buttonPanel.Controls.Add(MakeButton("AO Print All", () => OpenForm("PrintAllDtrForm")), 3, 1);
+
+        buttonPanel.Controls.Add(MakeButton("Settings", OpenSettings), 0, 2);
+        buttonPanel.Controls.Add(MakeButton("Health Check", OpenHealthCheck), 1, 2);
+        buttonPanel.Controls.Add(MakeButton("Backup DB", BackupDatabase), 2, 2);
+        buttonPanel.Controls.Add(MakeButton("Audit Logs", OpenAuditLogs), 3, 2);
+
+        buttonPanel.Controls.Add(MakeButton("Mapping Check", OpenMappingCheck), 0, 3);
 
         txtLog.Dock = DockStyle.Fill;
         txtLog.Multiline = true;
@@ -79,9 +87,6 @@ public class MainForm : Form
         Controls.Add(main);
 
         Log("System ready.");
-        // var hash = MachineFingerprintService.GetMachineHash();
-        // Log("Machine Hash: " + hash);
-        // MessageBox.Show(hash, "This Laptop Machine Hash");
     }
 
     private Button MakeButton(string text, Action action)
@@ -90,9 +95,8 @@ public class MainForm : Form
         {
             Text = text,
             Dock = DockStyle.Fill,
-            Margin = new Padding(6),
-            Font = new Font("Segoe UI", 10, FontStyle.Bold),
-            Height = 55
+            Margin = new Padding(5),
+            Font = new Font("Segoe UI", 9, FontStyle.Bold)
         };
 
         btn.Click += (_, _) =>
@@ -116,30 +120,41 @@ public class MainForm : Form
     {
         try
         {
-            var fromDate = DateTime.Today.AddDays(-30);
-            var toDate = DateTime.Today;
+            RunAutoBackup("Before fetching logs");
+
+            using var dlg = new FetchLogsDateRangeForm();
+
+            if (dlg.ShowDialog(this) != DialogResult.OK)
+                return;
+
+            var fromDate = dlg.DateFrom;
+            var toDate = dlg.DateTo;
 
             Log($"Fetching biometric logs from {fromDate:yyyy-MM-dd} to {toDate:yyyy-MM-dd}...");
 
             var result = await BiometricFetchService.FetchLogsAsync(fromDate, toDate);
 
+            AuditLogService.Log(
+                "FETCH_LOGS",
+                $"Fetched logs from {fromDate:yyyy-MM-dd} to {toDate:yyyy-MM-dd}. " +
+                $"Total: {result.TotalLogs}, Inserted: {result.InsertedLogs}, Duplicates: {result.DuplicateLogs}."
+            );
+
             var createdEmployees = 0;
 
             if (result.Success)
-            {
                 createdEmployees = await EmployeeAutoCreateService.CreateMissingEmployeesFromRawLogsAsync();
-            }
 
             if (result.Success)
             {
                 Log($"Fetch completed. Total: {result.TotalLogs}, Inserted: {result.InsertedLogs}, Duplicates: {result.DuplicateLogs}, New employees: {createdEmployees}");
 
-                    MessageBox.Show(
-                        $"Fetch completed.\n\nTotal: {result.TotalLogs}\nInserted: {result.InsertedLogs}\nDuplicates: {result.DuplicateLogs}\nNew employees created: {createdEmployees}",
-                        "Fetch Logs",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information
-                    );
+                MessageBox.Show(
+                    $"Fetch completed.\n\nTotal: {result.TotalLogs}\nInserted: {result.InsertedLogs}\nDuplicates: {result.DuplicateLogs}\nNew employees created: {createdEmployees}",
+                    "Fetch Logs",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
             }
             else
             {
@@ -155,64 +170,97 @@ public class MainForm : Form
         }
     }
 
-
     private void GenerateDtr()
     {
-        using var form = new GenerateDtrForm();
-        form.ShowDialog();
+        RunAutoBackup("Before generating DTR");
 
+        using var form = new GenerateDtrForm();
+        form.ShowDialog(this);
+
+        AuditLogService.Log("GENERATE_DTR", "Generated DTR.");
         Log("Generate DTR form closed.");
     }
 
     private void OpenForm(string formClassName)
     {
-        try
+        var fullName = $"SchoolDTR.Forms.{formClassName}";
+        var type = Type.GetType(fullName);
+
+        if (type == null)
         {
-            var fullName = $"SchoolDTR.Forms.{formClassName}";
-            var type = Type.GetType(fullName);
-
-            if (type == null)
-            {
-                MessageBox.Show($"{formClassName} does not exist yet.");
-                Log($"{formClassName} not found.");
-                return;
-            }
-
-            var form = Activator.CreateInstance(type) as Form;
-
-            if (form == null)
-            {
-                MessageBox.Show($"{formClassName} is not a valid Form.");
-                return;
-            }
-
-            form.ShowDialog();
-            Log($"{formClassName} opened.");
-        }
-        catch (Exception ex)
-        {
-            var realError = ex.InnerException?.Message ?? ex.Message;
-
-            MessageBox.Show(
-                realError,
-                $"{formClassName} Error",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error
-            );
-
-            Log($"{formClassName} Error: {realError}");
-        }
-    }
-
-    private void LogSafe(string message)
-    {
-        if (txtLog.InvokeRequired)
-        {
-            txtLog.Invoke(new Action(() => Log(message)));
+            MessageBox.Show($"{formClassName} does not exist yet.");
+            Log($"{formClassName} not found.");
             return;
         }
 
-        Log(message);
+        using var form = Activator.CreateInstance(type) as Form;
+
+        if (form == null)
+        {
+            MessageBox.Show($"{formClassName} is not a valid Form.");
+            return;
+        }
+
+        form.ShowDialog(this);
+        Log($"{formClassName} opened.");
+    }
+
+    private void OpenSettings()
+    {
+        using var f = new SettingsForm();
+        f.ShowDialog(this);
+    }
+
+    private void OpenHealthCheck()
+    {
+        using var f = new HealthCheckForm();
+        f.ShowDialog(this);
+    }
+
+    private void BackupDatabase()
+    {
+        var path = DatabaseBackupService.Backup();
+
+        AuditLogService.Log("BACKUP_DB", "Database backup created: " + path);
+
+        MessageBox.Show(
+            "Database backup completed:\n\n" + path,
+            "Backup Database",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Information
+        );
+    }
+
+    private void OpenAuditLogs()
+    {
+        using var f = new AuditLogsForm();
+        f.ShowDialog(this);
+    }
+
+    private void OpenMappingCheck()
+    {
+        using var f = new EmployeeMappingCheckForm();
+        f.ShowDialog(this);
+    }
+
+    private void RunAutoBackup(string reason)
+    {
+        try
+        {
+            var path = DatabaseBackupService.Backup();
+
+            AuditLogService.Log(
+                "AUTO_BACKUP",
+                $"{reason}. Backup created: {path}"
+            );
+        }
+        catch (Exception ex)
+        {
+            AuditLogService.Log(
+                "AUTO_BACKUP_FAILED",
+                $"{reason}. Backup failed: {ex.Message}"
+            );
+        }
     }
 
     private void Log(string message)

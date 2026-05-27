@@ -10,25 +10,17 @@ internal static class Program
     {
         ApplicationConfiguration.Initialize();
 
-        try
-        {
-            if (!LicenseService.IsLicensed())
-            {
-                ShowMachineHashWindow();
-                return;
-            }
+        var licensed = LicenseService.IsLicensedAsync()
+            .GetAwaiter()
+            .GetResult();
 
-            Application.Run(new StartupForm());
-        }
-        catch (Exception ex)
+        if (!licensed)
         {
-            MessageBox.Show(
-                ex.Message,
-                "Startup Error",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error
-            );
+            ShowMachineHashWindow();
+            return;
         }
+
+        Application.Run(new StartupForm());
     }
 
     private static void ShowMachineHashWindow()
@@ -38,16 +30,16 @@ internal static class Program
         using var form = new Form
         {
             Text = "Unlicensed Laptop",
-            Width = 650,
-            Height = 250,
+            Width = 720,
+            Height = 260,
             StartPosition = FormStartPosition.CenterScreen
         };
 
         var label = new Label
         {
-            Text = "This laptop is not licensed.\n\nCopy the machine hash below and add it to the system_license table:",
+            Text = "This laptop is not licensed.\n\nCopy the machine hash below and add it to the online license JSON file:",
             Dock = DockStyle.Top,
-            Height = 70,
+            Height = 80,
             Padding = new Padding(15),
             Font = new Font("Segoe UI", 10)
         };
@@ -67,7 +59,7 @@ internal static class Program
             Width = 120,
             Height = 35,
             Left = 15,
-            Top = 140
+            Top = 150
         };
 
         btnCopy.Click += (_, _) =>

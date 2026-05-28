@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+
 namespace SchoolDTR.Services;
 
 public static class LicenseService
@@ -24,10 +25,6 @@ public static class LicenseService
             Directory.CreateDirectory(Path.GetDirectoryName(CachePath)!);
             await File.WriteAllTextAsync(CachePath, json);
 
-
-            // MessageBox.Show(json);
-
-
             return IsHashAllowed(json, machineHash);
         }
         catch
@@ -37,7 +34,7 @@ public static class LicenseService
                 var cachedJson = await File.ReadAllTextAsync(CachePath);
                 return IsHashAllowed(cachedJson, machineHash);
             }
-        
+
             return false;
         }
     }
@@ -55,26 +52,25 @@ public static class LicenseService
         var normalizedHash = machineHash.Trim().ToUpperInvariant();
         var normalizedSchool = AppConfig.SchoolCode.Trim();
 
-        var matched = data.Licenses.Any(x =>
+        var license = data.Licenses.FirstOrDefault(x =>
             x.IsActive &&
-            (x.SchoolId ?? "").Trim() == normalizedSchool &&
-            string.Equals(
-                (x.MachineHash ?? "").Trim().ToUpperInvariant(),
-                normalizedHash,
-                StringComparison.OrdinalIgnoreCase
-            )
+            string.Equals((x.SchoolId ?? "").Trim(), normalizedSchool, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals((x.MachineHash ?? "").Trim().ToUpperInvariant(), normalizedHash, StringComparison.OrdinalIgnoreCase)
         );
 
+        if (license == null)
+            return false;
 
+        if (license.ExpiresOn == null)
+            return false;
 
-//         MessageBox.Show(
-//         $"AppConfig SchoolCode: [{AppConfig.SchoolCode}]\n" +
-//         $"JSON SchoolId: [{data.Licenses.FirstOrDefault()?.SchoolId}]\n\n" +
-//         $"Machine Hash:\n{normalizedHash}",
-//         "License Debug"
-// );
+        var today = DateTime.Today;
+        var expiryDate = license.ExpiresOn.Value.Date;
 
-        return matched;
+        if (today > expiryDate)
+            return false;
+
+        return true;
     }
 
     private class LicenseRoot
@@ -82,18 +78,21 @@ public static class LicenseService
         public List<LicenseItem> Licenses { get; set; } = new();
     }
 
-private class LicenseItem
-{
-    [JsonPropertyName("school_id")]
-    public string SchoolId { get; set; } = "";
+    private class LicenseItem
+    {
+        [JsonPropertyName("school_id")]
+        public string SchoolId { get; set; } = "";
 
-    [JsonPropertyName("machine_hash")]
-    public string MachineHash { get; set; } = "";
+        [JsonPropertyName("machine_hash")]
+        public string MachineHash { get; set; } = "";
 
-    [JsonPropertyName("school_name")]
-    public string SchoolName { get; set; } = "";
+        [JsonPropertyName("school_name")]
+        public string SchoolName { get; set; } = "";
 
-    [JsonPropertyName("is_active")]
-    public bool IsActive { get; set; }
-}
+        [JsonPropertyName("is_active")]
+        public bool IsActive { get; set; }
+
+        [JsonPropertyName("expires_on")]
+        public DateTime? ExpiresOn { get; set; }
+    }
 }

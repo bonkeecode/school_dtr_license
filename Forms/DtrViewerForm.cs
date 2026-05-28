@@ -4,6 +4,8 @@ using System.Drawing;
 using System.Windows.Forms;
 using MySqlConnector;
 using SchoolDTR.Services;
+using System.Drawing.Printing;
+using SchoolDTR.Models;
 
 namespace SchoolDTR.Forms;
 
@@ -62,6 +64,14 @@ public class DtrViewerForm : Form
         };
         btnLoad.Click += (_, _) => LoadEmployeesWithDtr();
 
+        var btnPrint = new Button
+        {
+            Text = "Print Selected DTR",
+            Width = 170,
+            Height = 35
+        };
+        btnPrint.Click += (_, _) => PrintSelectedEmployee();
+
         top.Controls.Add(new Label
         {
             Text = "Month:",
@@ -78,7 +88,7 @@ public class DtrViewerForm : Form
         });
         top.Controls.Add(txtSearch);
         top.Controls.Add(btnLoad);
-
+        top.Controls.Add(btnPrint);
         gridEmployees.Dock = DockStyle.Fill;
         gridEmployees.ReadOnly = true;
         gridEmployees.AllowUserToAddRows = false;
@@ -196,6 +206,149 @@ public class DtrViewerForm : Form
         gridDtr.DataSource = BuildDisplayTable(raw);
     }
 
+        private void PrintSelectedEmployee()
+        {
+            if (gridEmployees.CurrentRow == null)
+            {
+                MessageBox.Show(
+                    "Please select an employee first.",
+                    "No Employee Selected",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning
+                );
+                return;
+            }
+
+            try
+            {
+                string biometricUserId =
+                    Convert.ToString(
+                        gridEmployees.CurrentRow.Cells["biometric_user_id"].Value
+                    ) ?? "";
+
+                if (string.IsNullOrWhiteSpace(biometricUserId))
+                {
+                    MessageBox.Show("Employee number not found.");
+                    return;
+                }
+
+                using var conn = Db.GetConnection();
+                conn.Open();
+
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT
+                        employee_no,
+                        employee_name,
+                        employee_id,
+                        '' AS school_id,
+                        log_date AS work_date,
+                        morning_in,
+                        morning_out,
+                        afternoon_in,
+                        afternoon_out,
+                        remarks
+                    FROM biometric_dtr
+                    WHERE biometric_user_id = @biometricUserId
+                        AND YEAR(log_date) = @year
+                        AND MONTH(log_date) = @month
+                    ORDER BY log_date;
+                ";
+
+                cmd.Parameters.AddWithValue(
+                        "@biometricUserId",
+                        biometricUserId
+                    );
+                cmd.Parameters.AddWithValue("@year", dtMonth.Value.Year);
+                cmd.Parameters.AddWithValue("@month", dtMonth.Value.Month);
+
+                var table = new DataTable();
+
+                using (var da = new MySqlDataAdapter(cmd))
+                {
+                    da.Fill(table);
+                }
+
+                if (table.Rows.Count == 0)
+                {
+                    MessageBox.Show("No DTR found for selected employee.");
+                    return;
+                }
+
+                var first = table.Rows[0];
+
+                var data = new EmployeeDtrPrintData
+                {
+                    EmployeeNo = Convert.ToString(first["employee_no"]) ?? "",
+                    EmployeeName = Convert.ToString(first["employee_name"]) ?? "",
+                    PositionTitle = "",
+                    SchoolId = Convert.ToString(first["school_id"]) ?? "",
+                    Month = new DateTime(
+                        dtMonth.Value.Year,
+                        dtMonth.Value.Month,
+                        1
+                    )
+                };
+
+                foreach (DataRow row in table.Rows)
+                {
+                    data.Rows.Add(new EmployeeDtrPrintRow
+                    {
+                        Date = Convert.ToDateTime(row["work_date"]),
+                        MorningIn = Convert.ToString(row["morning_in"]) ?? "",
+                        MorningOut = Convert.ToString(row["morning_out"]) ?? "",
+                        AfternoonIn = Convert.ToString(row["afternoon_in"]) ?? "",
+                        AfternoonOut = Convert.ToString(row["afternoon_out"]) ?? "",
+                        Remarks = Convert.ToString(row["remarks"]) ?? ""
+                    });
+                }
+
+                var printDoc = new PrintDocument
+                {
+                    DefaultPageSettings =
+                    {
+                        Landscape = false,
+                        Margins = new Margins(20, 20, 20, 20),
+                        PaperSize = new PaperSize("A4", 827, 1169)
+                    }
+                };
+
+                printDoc.PrintPage += (_, e) =>
+                {
+                    var bounds = new Rectangle(
+                        0,
+                        0,
+                        e.PageBounds.Width,
+                        e.PageBounds.Height
+                    );
+
+                    CscForm48Printer.DrawForm(
+                        e.Graphics,
+                        bounds,
+                        data
+                    );
+                };
+
+                using var preview = new PrintPreviewDialog
+                {
+                    Document = printDoc,
+                    Width = 1200,
+                    Height = 900
+                };
+
+                preview.ShowDialog(this);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Unable to print DTR.\n\n" + ex.Message,
+                    "Print Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+            }
+        }
+
     private DataTable BuildDisplayTable(DataTable raw)
     {
         var dt = new DataTable();
@@ -260,4 +413,5 @@ public class DtrViewerForm : Form
 
         return "";
     }
+    
 }

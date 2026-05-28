@@ -14,10 +14,11 @@ public static class BiometricFetchService
 
         try
         {
+            await EnsureRawLogDuplicateProtectionAsync();
+
             string scriptPath = Path.Combine(AppContext.BaseDirectory, "tools", "fetch_zkteco_k14.py");
             if (!File.Exists(scriptPath))
             {
-                // During development, allow running from project folder too.
                 scriptPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "tools", "fetch_zkteco_k14.py"));
             }
 
@@ -67,8 +68,82 @@ public static class BiometricFetchService
                 Message = ex.Message,
                 RawOutput = ex.ToString()
             };
+
             await FinishFetchLogAsync(fetchLogId, result);
             return result;
+        }
+    }
+
+    private static async Task EnsureRawLogDuplicateProtectionAsync()
+    {
+        await using var conn = Db.GetConnection();
+        await conn.OpenAsync();
+
+        // Normalize nullable fields first so the unique key can properly detect duplicates.
+        const string normalizeSql = @"
+            UPDATE biometric_raw_logs
+            SET punch_type = IFNULL(punch_type, ''),
+                device_serial = IFNULL(device_serial, '')
+            WHERE punch_type IS NULL
+               OR device_serial IS NULL;";
+
+        await using (var normalizeCmd = new MySqlCommand(normalizeSql, conn))
+        {
+            await normalizeCmd.ExecuteNonQueryAsync();
+        }
+
+        // Remove existing duplicates, keeping the lowest ID.
+        const string deleteDuplicatesSql = @"
+            DELETE r1
+            FROM biometric_raw_logs r1
+            INNER JOIN biometric_raw_logs r2
+                ON r1.id > r2.id
+                AND r1.school_id = r2.school_id
+                AND r1.biometric_user_id = r2.biometric_user_id
+                AND r1.punch_time = r2.punch_time
+                AND IFNULL(r1.punch_type, '') = IFNULL(r2.punch_type, '')
+                AND IFNULL(r1.device_serial, '') = IFNULL(r2.device_serial, '');";
+
+        await using (var deleteCmd = new MySqlCommand(deleteDuplicatesSql, conn))
+        {
+            await deleteCmd.ExecuteNonQueryAsync();
+        }
+
+        // Add permanent duplicate protection.
+        // Ignore error 1061 = duplicate key name already exists.
+        const string alterNullSql = @"
+            ALTER TABLE biometric_raw_logs
+            MODIFY punch_type varchar(30) NOT NULL DEFAULT '',
+            MODIFY device_serial varchar(100) NOT NULL DEFAULT '';";
+
+        try
+        {
+            await using var alterNullCmd = new MySqlCommand(alterNullSql, conn);
+            await alterNullCmd.ExecuteNonQueryAsync();
+        }
+        catch
+        {
+            // Safe to ignore if table definition is already compatible.
+        }
+
+        const string uniqueKeySql = @"
+            ALTER TABLE biometric_raw_logs
+            ADD UNIQUE KEY uq_biometric_raw_unique (
+                school_id,
+                biometric_user_id,
+                punch_time,
+                punch_type,
+                device_serial
+            );";
+
+        try
+        {
+            await using var keyCmd = new MySqlCommand(uniqueKeySql, conn);
+            await keyCmd.ExecuteNonQueryAsync();
+        }
+        catch (MySqlException ex) when (ex.Number == 1061)
+        {
+            // Unique key already exists.
         }
     }
 

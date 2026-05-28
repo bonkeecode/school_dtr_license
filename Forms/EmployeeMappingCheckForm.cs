@@ -36,18 +36,29 @@ public class EmployeeMappingCheckForm : Form
             ORDER BY full_name;
         ");
 
+        AddTab("All Mappings", @"
+            SELECT
+                full_name AS `Employee Name`,
+                school_id AS `School ID`,
+                biometric_user_id AS `Biometric ID`
+            FROM employees
+            WHERE biometric_user_id IS NOT NULL
+            AND TRIM(biometric_user_id) <> ''
+            ORDER BY full_name;
+        ");
+
         AddTab("Unmapped Device IDs", @"
             SELECT DISTINCT
                 r.biometric_user_id AS `Biometric ID`,
+                r.school_id AS `Log School ID`,
                 COUNT(*) AS `Log Count`,
                 MIN(r.punch_time) AS `First Log`,
                 MAX(r.punch_time) AS `Last Log`
             FROM biometric_raw_logs r
             LEFT JOIN employees e
-                ON e.biometric_user_id = r.biometric_user_id
-               AND e.school_id = r.school_id
+                ON TRIM(e.biometric_user_id) = TRIM(r.biometric_user_id)
             WHERE e.id IS NULL
-            GROUP BY r.biometric_user_id
+            GROUP BY r.biometric_user_id, r.school_id
             ORDER BY r.biometric_user_id;
         ");
 

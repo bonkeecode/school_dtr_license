@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SchoolDTR")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8e8b607626de5d9dc3b999b63cd6221d3ff68742")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6fe5a6930e6223df48fabb5b3a6ae08600a0838b")]
 [assembly: System.Reflection.AssemblyProductAttribute("SchoolDTR")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SchoolDTR")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

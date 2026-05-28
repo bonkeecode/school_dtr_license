@@ -17,11 +17,14 @@ public static class LicenseService
 
         try
         {
-            using var http = new HttpClient();
-            http.Timeout = TimeSpan.FromSeconds(10);
+            using var http = new HttpClient
+            {
+                Timeout = TimeSpan.FromSeconds(10)
+            };
 
             var json = await http.GetStringAsync(AppConfig.LicenseJsonUrl);
 
+            // Save fresh copy to cache
             Directory.CreateDirectory(Path.GetDirectoryName(CachePath)!);
             await File.WriteAllTextAsync(CachePath, json);
 
@@ -29,54 +32,84 @@ public static class LicenseService
         }
         catch
         {
-            if (File.Exists(CachePath))
+            // Internet unavailable → use cached license only
+            if (!File.Exists(CachePath))
+                return false;
+
+            try
             {
                 var cachedJson = await File.ReadAllTextAsync(CachePath);
                 return IsHashAllowed(cachedJson, machineHash);
             }
-
-            return false;
+            catch
+            {
+                return false;
+            }
         }
     }
 
     private static bool IsHashAllowed(string json, string machineHash)
     {
-        var data = JsonSerializer.Deserialize<LicenseRoot>(json, new JsonSerializerOptions
+        try
         {
-            PropertyNameCaseInsensitive = true
-        });
+            var data = JsonSerializer.Deserialize<LicenseRoot>(
+                json,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
 
-        if (data?.Licenses == null)
-            return false;
+            if (data?.Licenses == null || data.Licenses.Count == 0)
+                return false;
 
-        var normalizedHash = machineHash.Trim().ToUpperInvariant();
-        var normalizedSchool = AppConfig.SchoolCode.Trim();
+            var normalizedHash = machineHash
+                .Trim()
+                .ToUpperInvariant();
 
-        var license = data.Licenses.FirstOrDefault(x =>
-            x.IsActive &&
-            string.Equals((x.SchoolId ?? "").Trim(), normalizedSchool, StringComparison.OrdinalIgnoreCase) &&
-            string.Equals((x.MachineHash ?? "").Trim().ToUpperInvariant(), normalizedHash, StringComparison.OrdinalIgnoreCase)
-        );
+            var normalizedSchool = AppConfig.SchoolCode
+                .Trim();
 
-        if (license == null)
-            return false;
+            var license = data.Licenses.FirstOrDefault(x =>
+                x.IsActive &&
+                string.Equals(
+                    (x.SchoolId ?? "").Trim(),
+                    normalizedSchool,
+                    StringComparison.OrdinalIgnoreCase
+                ) &&
+                string.Equals(
+                    (x.MachineHash ?? "")
+                        .Trim()
+                        .ToUpperInvariant(),
+                    normalizedHash,
+                    StringComparison.OrdinalIgnoreCase
+                )
+            );
 
-        // If expiration exists, validate it.
-// Old licenses without expiration remain valid.
-        if (license.ExpiresOn.HasValue)
-        {
+            if (license == null)
+                return false;
+
+            // Expiration date is REQUIRED
+            if (license.ExpiresOn == null)
+                return false;
+
             var today = DateTime.Today;
             var expiryDate = license.ExpiresOn.Value.Date;
 
+            // License expired
             if (today > expiryDate)
                 return false;
-        }
 
-        return true;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private class LicenseRoot
     {
+        [JsonPropertyName("licenses")]
         public List<LicenseItem> Licenses { get; set; } = new();
     }
 
@@ -91,9 +124,17 @@ public static class LicenseService
         [JsonPropertyName("school_name")]
         public string SchoolName { get; set; } = "";
 
+        // Supports both "is_active" and "active"
         [JsonPropertyName("is_active")]
         public bool IsActive { get; set; }
 
+        [JsonPropertyName("active")]
+        public bool Active
+        {
+            set => IsActive = value;
+        }
+
+        // REQUIRED
         [JsonPropertyName("expires_on")]
         public DateTime? ExpiresOn { get; set; }
     }

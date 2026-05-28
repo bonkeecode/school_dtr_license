@@ -61,14 +61,16 @@ public static class LicenseService
         if (license == null)
             return false;
 
-        if (license.ExpiresOn == null)
-            return false;
+        // If expiration exists, validate it.
+// Old licenses without expiration remain valid.
+        if (license.ExpiresOn.HasValue)
+        {
+            var today = DateTime.Today;
+            var expiryDate = license.ExpiresOn.Value.Date;
 
-        var today = DateTime.Today;
-        var expiryDate = license.ExpiresOn.Value.Date;
-
-        if (today > expiryDate)
-            return false;
+            if (today > expiryDate)
+                return false;
+        }
 
         return true;
     }

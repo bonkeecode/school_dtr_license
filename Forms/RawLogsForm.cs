@@ -77,6 +77,14 @@ public class RawLogsForm : Form
         };
         btnPrint.Click += (_, _) => PrintLogs();
 
+        var btnPdf = new Button
+        {
+            Text = "Export PDF",
+            Width = 120,
+            Height = 32
+        };
+        btnPdf.Click += (_, _) => ExportSelectedEmployeePdf();
+
         top.Controls.Add(new Label { Text = "From:", AutoSize = true, Padding = new Padding(0, 8, 5, 0) });
         top.Controls.Add(dtFrom);
 
@@ -87,6 +95,7 @@ public class RawLogsForm : Form
         top.Controls.Add(txtSearch);
         top.Controls.Add(btnLoad);
         top.Controls.Add(btnPrint);
+        top.Controls.Add(btnPdf);
 
         grid.Dock = DockStyle.Fill;
         grid.ReadOnly = true;
@@ -163,45 +172,149 @@ public class RawLogsForm : Form
         grid.DataSource = currentLogs;
     }
 
-    private void PrintLogs()
+    private bool ValidateOneEmployeeOnly(string actionTitle)
     {
         if (currentLogs.Rows.Count == 0)
         {
-            MessageBox.Show("No logs to print.", "Print", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return;
+            MessageBox.Show("No logs found.", actionTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return false;
         }
 
         var employeeCount = currentLogs.AsEnumerable()
             .Select(r => r["Biometric ID"]?.ToString())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
             .Distinct()
             .Count();
 
         if (employeeCount > 1)
         {
             MessageBox.Show(
-                "Please search/load one employee only before printing.",
-                "Print Raw Logs",
+                "Please search/load one employee only first.",
+                actionTitle,
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Warning
             );
-            return;
+            return false;
         }
 
+        return true;
+    }
+
+    private PrintDocument CreateRawLogsPrintDocument()
+    {
         printIndex = 0;
 
         var doc = new PrintDocument();
         doc.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
         doc.DefaultPageSettings.Margins = new Margins(50, 50, 50, 50);
+        doc.BeginPrint += (_, _) => printIndex = 0;
         doc.PrintPage += PrintPage;
 
-        using var preview = new PrintPreviewDialog
+        return doc;
+    }
+
+    private void PrintLogs()
+    {
+        if (!ValidateOneEmployeeOnly("Print Raw Logs"))
+            return;
+
+        using var doc = CreateRawLogsPrintDocument();
+
+        using var previewForm = new Form
         {
-            Document = doc,
+            Text = "Print Preview",
             Width = 1000,
-            Height = 700
+            Height = 700,
+            StartPosition = FormStartPosition.CenterParent
         };
 
-        preview.ShowDialog(this);
+        var preview = new PrintPreviewControl
+        {
+            Document = doc,
+            Dock = DockStyle.Fill,
+            Zoom = 1.0
+        };
+
+        var btnPrint = new Button
+        {
+            Text = "Print",
+            Dock = DockStyle.Top,
+            Height = 40
+        };
+
+        btnPrint.Click += (_, _) =>
+        {
+            using var dlg = new PrintDialog
+            {
+                Document = doc,
+                AllowSomePages = true,
+                UseEXDialog = true
+            };
+
+            if (dlg.ShowDialog(previewForm) == DialogResult.OK)
+            {
+                doc.PrinterSettings = dlg.PrinterSettings;
+                doc.Print();
+            }
+        };
+
+        previewForm.Controls.Add(preview);
+        previewForm.Controls.Add(btnPrint);
+
+        previewForm.ShowDialog(this);
+    }
+
+    private void ExportSelectedEmployeePdf()
+    {
+        if (!ValidateOneEmployeeOnly("Export PDF"))
+            return;
+
+        string name = currentLogs.Rows[0]["Name"]?.ToString() ?? "Employee";
+        string bioId = currentLogs.Rows[0]["Biometric ID"]?.ToString() ?? "Unknown";
+
+        using var save = new SaveFileDialog
+        {
+            Title = "Export Raw Logs to PDF",
+            Filter = "PDF file (*.pdf)|*.pdf",
+            FileName = SafeFileName($"RawLogs_{name}_{bioId}_{dtFrom.Value:yyyyMMdd}_{dtTo.Value:yyyyMMdd}.pdf"),
+            OverwritePrompt = true
+        };
+
+        if (save.ShowDialog(this) != DialogResult.OK)
+            return;
+
+        using var doc = CreateRawLogsPrintDocument();
+
+        try
+        {
+            doc.PrinterSettings = new PrinterSettings
+            {
+                PrinterName = "Microsoft Print to PDF",
+                PrintToFile = true,
+                PrintFileName = save.FileName
+            };
+
+            doc.PrintController = new StandardPrintController();
+
+            if (!doc.PrinterSettings.IsValid)
+                throw new Exception("Microsoft Print to PDF printer is not available.");
+
+            doc.Print();
+
+            MessageBox.Show("PDF export completed.", "Export PDF", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("PDF export failed: " + ex.Message, "Export PDF", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private static string SafeFileName(string fileName)
+    {
+        foreach (char c in System.IO.Path.GetInvalidFileNameChars())
+            fileName = fileName.Replace(c, '-');
+
+        return fileName;
     }
 
     private void PrintPage(object? sender, PrintPageEventArgs e)

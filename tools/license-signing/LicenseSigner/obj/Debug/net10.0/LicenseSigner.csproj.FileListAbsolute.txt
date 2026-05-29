@@ -1,0 +1,15 @@
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\LicenseSigner\bin\Debug\net10.0\LicenseSigner.exe
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\LicenseSigner\bin\Debug\net10.0\LicenseSigner.deps.json
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\LicenseSigner\bin\Debug\net10.0\LicenseSigner.runtimeconfig.json
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\LicenseSigner\bin\Debug\net10.0\LicenseSigner.dll
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\LicenseSigner\bin\Debug\net10.0\LicenseSigner.pdb
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\LicenseSigner\obj\Debug\net10.0\LicenseSigner.GeneratedMSBuildEditorConfig.editorconfig
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\LicenseSigner\obj\Debug\net10.0\LicenseSigner.AssemblyInfoInputs.cache
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\LicenseSigner\obj\Debug\net10.0\LicenseSigner.AssemblyInfo.cs
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\LicenseSigner\obj\Debug\net10.0\LicenseSigner.csproj.CoreCompileInputs.cache
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\LicenseSigner\obj\Debug\net10.0\LicenseSigner.sourcelink.json
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\LicenseSigner\obj\Debug\net10.0\LicenseSigner.dll
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\LicenseSigner\obj\Debug\net10.0\refint\LicenseSigner.dll
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\LicenseSigner\obj\Debug\net10.0\LicenseSigner.pdb
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\LicenseSigner\obj\Debug\net10.0\LicenseSigner.genruntimeconfig.cache
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\LicenseSigner\obj\Debug\net10.0\ref\LicenseSigner.dll

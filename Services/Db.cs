@@ -8,12 +8,21 @@ public static class Db
     {
         var s = AppSettingsService.Load();
 
+        // If settings are not yet configured,
+        // fallback to AppConfig.ConnectionString
+        if (string.IsNullOrWhiteSpace(s.DbHost) ||
+            string.IsNullOrWhiteSpace(s.DbName) ||
+            string.IsNullOrWhiteSpace(s.DbUser))
+        {
+            return new MySqlConnection(AppConfig.ConnectionString);
+        }
+
         var csb = new MySqlConnectionStringBuilder
         {
             Server = s.DbHost,
             Database = s.DbName,
             UserID = s.DbUser,
-            Password = s.DbPassword,
+            Password = s.DbPassword ?? "",
             SslMode = MySqlSslMode.None,
             AllowUserVariables = true
         };

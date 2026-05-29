@@ -14,4 +14,8 @@
   <ItemGroup>
     <None Include="tools\fetch_zkteco_k14.py" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <ItemGroup>
+  <Compile Remove="tools\**\*.cs" />
+  <None Include="tools\**\*" />
+</ItemGroup>
 </Project>

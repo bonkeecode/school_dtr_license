@@ -1,4 +1,6 @@
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -13,15 +15,17 @@ public static class LicenseService
 
     private static readonly string CachePath = Path.Combine(
         CacheFolder,
-        "license_cache_v2.json"
+        "license_cache_v2.bin"
     );
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
 
     public static async Task<bool> IsLicensedAsync()
     {
         string machineHash = MachineFingerprintService.GetMachineHash();
-
-        // Important: remove old cache before checking online license.
-        ForceClearLicenseCache();
 
         string json;
 
@@ -31,24 +35,39 @@ public static class LicenseService
         }
         catch
         {
-            // No offline authorization.
-            // If GitHub cannot be reached, deny access.
-            ForceClearLicenseCache();
-            return false;
+            var cache = ReadEncryptedCacheEnvelope();
+
+            if (cache == null)
+            {
+                DeleteCache();
+                return false;
+            }
+
+            if (!IsCacheStillSafe(cache))
+            {
+                DeleteCache();
+                return false;
+            }
+
+            if (!IsHashAllowed(cache.Json, machineHash))
+            {
+                DeleteCache();
+                return false;
+            }
+
+            UpdateCacheLastRun(cache);
+            return true;
         }
 
         bool allowed = IsHashAllowed(json, machineHash);
 
         if (!allowed)
         {
-            ForceClearLicenseCache();
+            DeleteCache();
             return false;
         }
 
-        // Cache is only for reference/debug.
-        // The app must never authorize from this file.
-        SaveCacheForReferenceOnly(json);
-
+        SaveEncryptedCache(json);
         return true;
     }
 
@@ -77,70 +96,41 @@ public static class LicenseService
         return await http.GetStringAsync(url);
     }
 
-    private static void SaveCacheForReferenceOnly(string json)
-    {
-        try
-        {
-            Directory.CreateDirectory(CacheFolder);
-            File.WriteAllText(CachePath, json);
-        }
-        catch
-        {
-            // Cache is optional. Do not allow or deny based on this.
-        }
-    }
-
-    private static void ForceClearLicenseCache()
-    {
-        try
-        {
-            if (!Directory.Exists(CacheFolder))
-                return;
-
-            foreach (string file in Directory.GetFiles(CacheFolder, "*.json"))
-            {
-                try
-                {
-                    File.SetAttributes(file, FileAttributes.Normal);
-                    File.Delete(file);
-                }
-                catch
-                {
-                    // Ignore locked files.
-                    // They are no longer trusted anyway.
-                }
-            }
-        }
-        catch
-        {
-            // Do not crash the app because of cleanup failure.
-        }
-    }
-
     private static bool IsHashAllowed(string json, string machineHash)
     {
         try
         {
-            var data = JsonSerializer.Deserialize<LicenseRoot>(json, JsonOptions);
+            using var doc = JsonDocument.Parse(json);
 
-            if (data?.Licenses == null || data.Licenses.Count == 0)
+            if (!doc.RootElement.TryGetProperty("payload", out var payload))
+                return false;
+
+            if (!doc.RootElement.TryGetProperty("signature", out var signatureElement))
+                return false;
+
+            string signature = signatureElement.GetString() ?? "";
+
+            if (!LicenseSignatureService.VerifyPayload(payload, signature))
+                return false;
+
+            if (!payload.TryGetProperty("licenses", out var licensesElement))
+                return false;
+
+            var licenses = JsonSerializer.Deserialize<List<LicenseItem>>(
+                licensesElement.GetRawText(),
+                JsonOptions
+            );
+
+            if (licenses == null || licenses.Count == 0)
                 return false;
 
             string normalizedHash = machineHash.Trim().ToUpperInvariant();
             string normalizedSchool = AppConfig.SchoolCode.Trim();
 
-            var license = data.Licenses.FirstOrDefault(x =>
+            var license = licenses.FirstOrDefault(x =>
                 x.IsActive &&
-                string.Equals(
-                    (x.SchoolId ?? "").Trim(),
-                    normalizedSchool,
-                    StringComparison.OrdinalIgnoreCase
-                ) &&
-                string.Equals(
-                    (x.MachineHash ?? "").Trim().ToUpperInvariant(),
-                    normalizedHash,
-                    StringComparison.OrdinalIgnoreCase
-                )
+                string.Equals((x.SchoolId ?? "").Trim(), normalizedSchool, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals((x.MachineHash ?? "").Trim().ToUpperInvariant(), normalizedHash, StringComparison.OrdinalIgnoreCase)
             );
 
             if (license == null)
@@ -160,17 +150,66 @@ public static class LicenseService
         }
     }
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
+    private static void SaveEncryptedCache(string json)
     {
-        PropertyNameCaseInsensitive = true
-    };
+        try
+        {
+            Directory.CreateDirectory(CacheFolder);
 
-    private class LicenseRoot
-    {
-        [JsonPropertyName("licenses")]
-        public List<LicenseItem> Licenses { get; set; } = new();
+            var envelope = new LicenseCacheEnvelope
+            {
+                Json = json,
+                LastOnlineCheckUtc = DateTime.UtcNow,
+                LastRunUtc = DateTime.UtcNow
+            };
+
+            string envelopeJson = JsonSerializer.Serialize(envelope, JsonOptions);
+            byte[] plainBytes = Encoding.UTF8.GetBytes(envelopeJson);
+
+            byte[] encrypted = ProtectedData.Protect(
+                plainBytes,
+                null,
+                DataProtectionScope.LocalMachine
+            );
+
+            File.WriteAllBytes(CachePath, encrypted);
+        }
+        catch
+        {
+        }
     }
 
+    private static void DeleteCache()
+    {
+        try
+        {
+            if (File.Exists(CachePath))
+                File.Delete(CachePath);
+
+            foreach (string file in Directory.GetFiles(CacheFolder, "license_cache*.json"))
+            {
+                try
+                {
+                    File.SetAttributes(file, FileAttributes.Normal);
+                    File.Delete(file);
+                }
+                catch
+                {
+                    // ignore
+                }
+            }
+        }
+        catch
+        {
+            // ignore
+        }
+    }
+    private class LicenseCacheEnvelope
+    {
+        public string Json { get; set; } = "";
+        public DateTime LastOnlineCheckUtc { get; set; }
+        public DateTime LastRunUtc { get; set; }
+    }
     private class LicenseItem
     {
         [JsonPropertyName("school_id")]
@@ -192,6 +231,68 @@ public static class LicenseService
         public bool Active
         {
             set => IsActive = value;
+        }
+    }
+    private static LicenseCacheEnvelope? ReadEncryptedCacheEnvelope()
+    {
+        try
+        {
+            if (!File.Exists(CachePath))
+                return null;
+
+            byte[] encrypted = File.ReadAllBytes(CachePath);
+
+            byte[] decrypted = ProtectedData.Unprotect(
+                encrypted,
+                null,
+                DataProtectionScope.LocalMachine
+            );
+
+            string envelopeJson = Encoding.UTF8.GetString(decrypted);
+
+            return JsonSerializer.Deserialize<LicenseCacheEnvelope>(
+                envelopeJson,
+                JsonOptions
+            );
+        }
+        catch
+        {
+            return null;
+        }
+    }
+    private static bool IsCacheStillSafe(LicenseCacheEnvelope cache)
+    {
+        var now = DateTime.UtcNow;
+
+        // Clock rollback detection
+        if (now < cache.LastRunUtc.AddMinutes(-5))
+            return false;
+
+        // Offline grace period: 7 days only
+        if (now > cache.LastOnlineCheckUtc.AddDays(7))
+            return false;
+
+        return true;
+    }
+    private static void UpdateCacheLastRun(LicenseCacheEnvelope cache)
+    {
+        try
+        {
+            cache.LastRunUtc = DateTime.UtcNow;
+
+            string envelopeJson = JsonSerializer.Serialize(cache, JsonOptions);
+            byte[] plainBytes = Encoding.UTF8.GetBytes(envelopeJson);
+
+            byte[] encrypted = ProtectedData.Protect(
+                plainBytes,
+                null,
+                DataProtectionScope.LocalMachine
+            );
+
+            File.WriteAllBytes(CachePath, encrypted);
+        }
+        catch
+        {
         }
     }
 }

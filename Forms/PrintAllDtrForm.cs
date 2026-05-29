@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing.Printing;
+using System.IO;
 using System.Windows.Forms;
 using MySqlConnector;
 using SchoolDTR.Models;
@@ -15,20 +16,23 @@ public class PrintAllDtrForm : Form
     private readonly PrintDocument printDoc = new();
 
     private readonly List<string> employeeNos = new();
-    private int currentEmployeeIndex = 0;
+    private int currentEmployeeIndex;
     private EmployeeDtrPrintData? currentData;
 
     public PrintAllDtrForm()
     {
         Text = "AO Print All DTR - CSC Form 48";
-        Width = 460;
-        Height = 180;
+        Width = 520;
+        Height = 240;
         StartPosition = FormStartPosition.CenterParent;
 
         BuildUi();
 
         printDoc.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
+        printDoc.DefaultPageSettings.Margins = new Margins(50, 50, 50, 50);
         printDoc.DefaultPageSettings.Landscape = false;
+
+        printDoc.BeginPrint += PrintDoc_BeginPrint;
         printDoc.PrintPage += PrintDoc_PrintPage;
     }
 
@@ -39,7 +43,7 @@ public class PrintAllDtrForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(15),
             ColumnCount = 2,
-            RowCount = 3
+            RowCount = 5
         };
 
         panel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
@@ -60,33 +64,134 @@ public class PrintAllDtrForm : Form
             Height = 40
         };
         btnPreview.Click += (_, _) => PreviewAll();
-
         panel.Controls.Add(btnPreview, 1, 1);
+
+        var btnPrint = new Button
+        {
+            Text = "Print All",
+            Dock = DockStyle.Fill,
+            Height = 40
+        };
+        btnPrint.Click += (_, _) => PrintAll();
+        panel.Controls.Add(btnPrint, 1, 2);
+
+        var btnPdf = new Button
+        {
+            Text = "Export All DTR to PDF",
+            Dock = DockStyle.Fill,
+            Height = 40
+        };
+        btnPdf.Click += (_, _) => ExportAllToPdf();
+        panel.Controls.Add(btnPdf, 1, 3);
 
         Controls.Add(panel);
     }
 
-    private void PreviewAll()
+    private bool PrepareEmployees()
     {
         LoadEmployeeNos();
 
         if (employeeNos.Count == 0)
         {
             MessageBox.Show("No DTR records found for this month.");
-            return;
+            return false;
         }
 
+        ResetPrintState();
+        return true;
+    }
+
+    private void ResetPrintState()
+    {
         currentEmployeeIndex = 0;
-        currentData = LoadPrintData(employeeNos[currentEmployeeIndex]);
+        currentData = employeeNos.Count > 0
+            ? LoadPrintData(employeeNos[currentEmployeeIndex])
+            : null;
+    }
+
+    private void PreviewAll()
+    {
+        if (!PrepareEmployees())
+            return;
 
         using var preview = new PrintPreviewDialog
         {
             Document = printDoc,
             Width = 1000,
-            Height = 750
+            Height = 700
         };
 
-        preview.ShowDialog();
+        preview.ShowDialog(this);
+    }
+
+    private void PrintAll()
+    {
+        if (!PrepareEmployees())
+            return;
+
+        using var dlg = new PrintDialog
+        {
+            Document = printDoc,
+            AllowSomePages = false,
+            UseEXDialog = true
+        };
+
+        if (dlg.ShowDialog(this) == DialogResult.OK)
+        {
+            printDoc.PrinterSettings = dlg.PrinterSettings;
+            printDoc.Print();
+        }
+    }
+
+    private void ExportAllToPdf()
+    {
+        if (!PrepareEmployees())
+            return;
+
+        using var save = new SaveFileDialog
+        {
+            Title = "Export All DTR to PDF",
+            Filter = "PDF file (*.pdf)|*.pdf",
+            FileName = $"DTR_All_{dtMonth.Value:yyyy_MM}.pdf",
+            OverwritePrompt = true
+        };
+
+        if (save.ShowDialog(this) != DialogResult.OK)
+            return;
+
+        try
+        {
+            var oldPrinterSettings = printDoc.PrinterSettings;
+            var oldController = printDoc.PrintController;
+
+            printDoc.PrinterSettings = new PrinterSettings
+            {
+                PrinterName = "Microsoft Print to PDF",
+                PrintToFile = true,
+                PrintFileName = save.FileName
+            };
+
+            printDoc.PrintController = new StandardPrintController();
+
+            if (!printDoc.PrinterSettings.IsValid)
+                throw new InvalidOperationException("Microsoft Print to PDF printer is not available on this computer.");
+
+            printDoc.Print();
+
+            printDoc.PrinterSettings = oldPrinterSettings;
+            printDoc.PrintController = oldController;
+
+            MessageBox.Show("DTR PDF export completed.");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("PDF export failed: " + ex.Message);
+        }
+    }
+
+    private void PrintDoc_BeginPrint(object? sender, PrintEventArgs e)
+    {
+        ResetPrintState();
     }
 
     private void LoadEmployeeNos()
@@ -113,7 +218,10 @@ public class PrintAllDtrForm : Form
 
         while (reader.Read())
         {
-            employeeNos.Add(Convert.ToString(reader["employee_no"]) ?? "");
+            var employeeNo = Convert.ToString(reader["employee_no"])?.Trim();
+
+            if (!string.IsNullOrWhiteSpace(employeeNo))
+                employeeNos.Add(employeeNo);
         }
     }
 
@@ -184,6 +292,12 @@ public class PrintAllDtrForm : Form
 
     private void PrintDoc_PrintPage(object? sender, PrintPageEventArgs e)
     {
+        while (currentData == null && currentEmployeeIndex < employeeNos.Count - 1)
+        {
+            currentEmployeeIndex++;
+            currentData = LoadPrintData(employeeNos[currentEmployeeIndex]);
+        }
+
         if (e.Graphics == null || currentData == null)
         {
             e.HasMorePages = false;
@@ -201,6 +315,7 @@ public class PrintAllDtrForm : Form
         }
         else
         {
+            currentData = null;
             e.HasMorePages = false;
         }
     }

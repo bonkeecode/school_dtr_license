@@ -1,11 +1,17 @@
+using SchoolDTR.Models;
 using SchoolDTR.Services;
 using MySqlConnector;
+
 namespace SchoolDTR.Forms;
 
 public class SettingsForm : Form
 {
     private readonly TextBox txtSchoolId = new();
     private readonly TextBox txtSchoolName = new();
+
+    private readonly PictureBox picLogo = new();
+    private readonly Button btnUploadLogo = new();
+    private string selectedLogoPath = "";
 
     private readonly ComboBox cmbDeviceModel = new();
     private readonly TextBox txtDeviceIp = new();
@@ -16,75 +22,80 @@ public class SettingsForm : Form
     private readonly TextBox txtDbName = new();
     private readonly TextBox txtDbUser = new();
     private readonly TextBox txtDbPassword = new();
-  
-
-
+    
 
     public SettingsForm()
     {
         Text = "System Settings";
-        Width = 500;
-        Height = 500;
+        Width = 650;
+        Height = 650;
         StartPosition = FormStartPosition.CenterParent;
 
         BuildUi();
         LoadSettings();
+        ApplyLogoIcon();
     }
 
-        private void BuildUi()
+    private void BuildUi()
+    {
+        var panel = new TableLayoutPanel
         {
-            Width = 600;
-            Height = 520;
+            Dock = DockStyle.Fill,
+            Padding = new Padding(20),
+            ColumnCount = 2,
+            AutoScroll = true
+        };
 
-            var panel = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                Padding = new Padding(20),
-                ColumnCount = 2,
-                RowCount = 0,
-                AutoSize = false
-            };
+        panel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160));
+        panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-            panel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150));
-            panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        AddRow(panel, "School ID:", txtSchoolId);
+        AddRow(panel, "School Name:", txtSchoolName);
 
-            AddRow(panel, "School ID:", txtSchoolId);
-            AddRow(panel, "School Name:", txtSchoolName);
+        picLogo.Height = 90;
+        picLogo.BorderStyle = BorderStyle.FixedSingle;
+        picLogo.SizeMode = PictureBoxSizeMode.Zoom;
+        AddRow(panel, "School Logo:", picLogo, 100);
 
-            cmbDeviceModel.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbDeviceModel.Items.AddRange(new object[]
-            {
-                "ZKTeco Compatible",
-                "ZKTeco K14",
-                "ZKTeco K40",
-                "ZKTeco MB460",
-                "ZKTeco X628-C",
-                "Other"
-            });
-            AddRow(panel, "Device Model:", cmbDeviceModel);
+        btnUploadLogo.Text = "Upload Logo";
+        btnUploadLogo.Height = 35;
+        btnUploadLogo.Click += BtnUploadLogo_Click;
+        AddRow(panel, "", btnUploadLogo);
 
-            AddRow(panel, "Device IP:", txtDeviceIp);
+        cmbDeviceModel.DropDownStyle = ComboBoxStyle.DropDownList;
+        cmbDeviceModel.Items.AddRange(new object[]
+        {
+            "ZKTeco Compatible",
+            "ZKTeco K14",
+            "ZKTeco K40",
+            "ZKTeco MB460",
+            "ZKTeco X628-C",
+            "Other"
+        });
 
-            numDevicePort.Maximum = 99999;
-            numDevicePort.Minimum = 1;
-            AddRow(panel, "Device Port:", numDevicePort);
+        AddRow(panel, "Device Model:", cmbDeviceModel);
+        AddRow(panel, "Device IP:", txtDeviceIp);
 
-            numMachineNumber.Maximum = 999;
-            numMachineNumber.Minimum = 1;
-            AddRow(panel, "Machine No.:", numMachineNumber);
+        numDevicePort.Minimum = 1;
+        numDevicePort.Maximum = 99999;
+        AddRow(panel, "Device Port:", numDevicePort);
 
-            AddRow(panel, "DB Host:", txtDbHost);
-            AddRow(panel, "DB Name:", txtDbName);
-            AddRow(panel, "DB User:", txtDbUser);
+        numMachineNumber.Minimum = 1;
+        numMachineNumber.Maximum = 999;
+        AddRow(panel, "Machine No.:", numMachineNumber);
 
-            txtDbPassword.UseSystemPasswordChar = true;
-            AddRow(panel, "DB Password:", txtDbPassword);
+        AddRow(panel, "DB Host:", txtDbHost);
+        AddRow(panel, "DB Name:", txtDbName);
+        AddRow(panel, "DB User:", txtDbUser);
 
-            var buttons = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.LeftToRight
-            };
+        txtDbPassword.UseSystemPasswordChar = true;
+        AddRow(panel, "DB Password:", txtDbPassword);
+
+        var buttons = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.LeftToRight
+        };
 
         var btnTestDb = new Button
         {
@@ -107,22 +118,144 @@ public class SettingsForm : Form
             Height = 35
         };
 
-            btnTestDb.Click += (_, _) => TestDatabaseConnection();
-            btnTestDevice.Click += (_, _) => TestDeviceConnection();
-            btnSave.Click += (_, _) => SaveSettings();
+        btnTestDb.Click += (_, _) => TestDatabaseConnection();
+        btnTestDevice.Click += (_, _) => TestDeviceConnection();
+        btnSave.Click += (_, _) => SaveSettings();
 
-            buttons.Controls.Add(btnTestDb);
-            buttons.Controls.Add(btnTestDevice);
-            buttons.Controls.Add(btnSave);
+        buttons.Controls.Add(btnTestDb);
+        buttons.Controls.Add(btnTestDevice);
+        buttons.Controls.Add(btnSave);
 
-            int buttonRow = panel.RowCount;
-            panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 45));
-            panel.RowCount++;
-            panel.Controls.Add(new Label(), 0, buttonRow);
-            panel.Controls.Add(buttons, 1, buttonRow);
+        AddRow(panel, "", buttons, 50);
 
-            Controls.Add(panel);
+        Controls.Add(panel);
+    }
+
+    private static void AddRow(TableLayoutPanel panel, string label, Control control, int height = 38)
+    {
+        int row = panel.RowCount;
+
+        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
+        panel.RowCount++;
+
+        var lbl = new Label
+        {
+            Text = label,
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+
+        control.Dock = DockStyle.Fill;
+
+        panel.Controls.Add(lbl, 0, row);
+        panel.Controls.Add(control, 1, row);
+    }
+
+    private void LoadSettings()
+    {
+        var s = AppSettingsService.Load();
+
+        txtSchoolId.Text = s.SchoolId;
+        txtSchoolName.Text = s.SchoolName;
+        selectedLogoPath = s.LogoPath ?? "";
+
+        if (File.Exists(selectedLogoPath))
+        {
+            picLogo.Image?.Dispose();
+            using var img = Image.FromFile(selectedLogoPath);
+            picLogo.Image = new Bitmap(img);
         }
+
+        cmbDeviceModel.Text = string.IsNullOrWhiteSpace(s.DeviceModel)
+            ? "ZKTeco Compatible"
+            : s.DeviceModel;
+
+        txtDeviceIp.Text = s.DeviceIp;
+        numDevicePort.Value = s.DevicePort > 0 ? s.DevicePort : 4370;
+        numMachineNumber.Value = s.MachineNumber > 0 ? s.MachineNumber : 1;
+
+        txtDbHost.Text = s.DbHost;
+        txtDbName.Text = s.DbName;
+        txtDbUser.Text = s.DbUser;
+        txtDbPassword.Text = s.DbPassword;
+    }
+
+    private void SaveSettings()
+    {
+        var s = AppSettingsService.Load();
+
+        s.SchoolId = txtSchoolId.Text.Trim();
+        s.SchoolName = txtSchoolName.Text.Trim();
+        s.LogoPath = selectedLogoPath;
+
+        s.DeviceModel = cmbDeviceModel.Text;
+        s.DeviceIp = txtDeviceIp.Text.Trim();
+        s.DevicePort = (int)numDevicePort.Value;
+        s.MachineNumber = (int)numMachineNumber.Value;
+
+        s.DbHost = txtDbHost.Text.Trim();
+        s.DbName = txtDbName.Text.Trim();
+        s.DbUser = txtDbUser.Text.Trim();
+        s.DbPassword = txtDbPassword.Text;
+
+        AppSettingsService.Save(s);
+
+        AuditLogService.Log("SETTINGS_UPDATED", "System settings were updated.");
+
+        MessageBox.Show(
+            "Settings saved successfully.\n\nRestart the system to fully apply the new logo and icon.",
+            "Settings",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Information
+        );
+
+        Close();
+    }
+
+    private void BtnUploadLogo_Click(object? sender, EventArgs e)
+    {
+        using var dlg = new OpenFileDialog
+        {
+            Title = "Select School Logo",
+            Filter =
+                "Image Files|*.png;*.jpg;*.jpeg;*.bmp"
+        };
+
+        if (dlg.ShowDialog(this) != DialogResult.OK)
+            return;
+
+        var settings = AppSettingsService.Load();
+
+        string logoPath =
+            AppSettingsService.GetDefaultLogoPath();
+
+        using (var img = Image.FromFile(dlg.FileName))
+        {
+            img.Save(
+                logoPath,
+                System.Drawing.Imaging.ImageFormat.Png);
+        }
+
+        settings.LogoPath = logoPath;
+        AppSettingsService.Save(settings);
+
+        picLogo.Image?.Dispose();
+        picLogo.Image = Image.FromFile(logoPath);
+
+        ApplyLogoIcon();
+
+        AppSettingsService.Save(settings);
+
+        picLogo.Image?.Dispose();
+        picLogo.Image = Image.FromFile(logoPath);
+
+        MessageBox.Show(
+            "Logo uploaded successfully.",
+            "Success",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Information);
+    }
+
     private void TestDatabaseConnection()
     {
         try
@@ -157,88 +290,12 @@ public class SettingsForm : Form
         }
     }
 
-        private static void AddRow(TableLayoutPanel panel, string label, Control control)
-        {
-            int row = panel.RowCount;
-
-            panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 35));
-            panel.RowCount++;
-
-            var lbl = new Label
-            {
-                Text = label,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-
-            control.Dock = DockStyle.Fill;
-
-            panel.Controls.Add(lbl, 0, row);
-            panel.Controls.Add(control, 1, row);
-        }
-
-    private void LoadSettings()
-    {
-        var s = AppSettingsService.Load();
-
-        txtSchoolId.Text = s.SchoolId;
-        txtSchoolName.Text = s.SchoolName;
-
-        cmbDeviceModel.Text = string.IsNullOrWhiteSpace(s.DeviceModel)
-            ? "ZKTeco Compatible"
-            : s.DeviceModel;
-
-        txtDeviceIp.Text = s.DeviceIp;
-        numDevicePort.Value = s.DevicePort > 0 ? s.DevicePort : 4370;
-        numMachineNumber.Value = s.MachineNumber > 0 ? s.MachineNumber : 1;
-
-        txtDbHost.Text = s.DbHost;
-        txtDbName.Text = s.DbName;
-        txtDbUser.Text = s.DbUser;
-        txtDbPassword.Text = s.DbPassword;
-        cmbDeviceModel.Text = s.DeviceModel;
-        numMachineNumber.Value = s.MachineNumber;
-    }
-
-    private void SaveSettings()
-    {
-        var s = new AppSettings
-        {
-            SchoolId = txtSchoolId.Text.Trim(),
-            SchoolName = txtSchoolName.Text.Trim(),
-            DeviceModel = cmbDeviceModel.Text,
-            DeviceIp = txtDeviceIp.Text.Trim(),
-            DevicePort = (int)numDevicePort.Value,
-            MachineNumber = (int)numMachineNumber.Value,
-
-            DbHost = txtDbHost.Text.Trim(),
-            DbName = txtDbName.Text.Trim(),
-            DbUser = txtDbUser.Text.Trim(),
-            DbPassword = txtDbPassword.Text
-        };
-
-        AppSettingsService.Save(s);
-        AuditLogService.Log("SETTINGS_UPDATED", "System settings were updated.");
-        MessageBox.Show("Settings saved successfully.", "Settings");
-        Close();
-    }
-
     private void TestDeviceConnection()
     {
         try
         {
             string ip = txtDeviceIp.Text.Trim();
-
-            if (!int.TryParse(numDevicePort.Value.ToString(), out int port))
-            {
-                MessageBox.Show(
-                    "Invalid device port.",
-                    "Test Device",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning
-                );
-                return;
-            }
+            int port = (int)numDevicePort.Value;
 
             using var client = new System.Net.Sockets.TcpClient();
 
@@ -273,6 +330,27 @@ public class SettingsForm : Form
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error
             );
+        }
+    }
+    private void ApplyLogoIcon()
+    {
+        var settings = AppSettingsService.Load();
+
+        if (string.IsNullOrWhiteSpace(settings.LogoPath))
+            return;
+
+        if (!File.Exists(settings.LogoPath))
+            return;
+
+        try
+        {
+            using var bmp = new Bitmap(settings.LogoPath);
+            IntPtr hIcon = bmp.GetHicon();
+            Icon = Icon.FromHandle(hIcon);
+        }
+        catch
+        {
+            // Ignore invalid image/icon errors
         }
     }
 }

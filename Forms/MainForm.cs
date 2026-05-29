@@ -26,25 +26,61 @@ public class MainForm : Form
     private Label lblClock = new();
     private readonly System.Windows.Forms.Timer clockTimer = new();
 
+    private bool compactMode;
+    private int sidebarWidth;
+    private int pagePadding;
+    private int cardGap;
+    private int actionButtonWidth;
+    private int actionButtonHeight;
+
     private readonly Color depedBlue = Color.FromArgb(15, 45, 95);
     private readonly Color depedBlueLight = Color.FromArgb(30, 90, 180);
     private readonly Color depedRed = Color.FromArgb(185, 28, 28);
     private readonly Color bgGray = Color.FromArgb(243, 244, 246);
     private readonly Color textDark = Color.FromArgb(31, 41, 55);
     private readonly Color textMuted = Color.FromArgb(75, 85, 99);
-
+    private readonly Label lblSchoolName = new();
+    private readonly Label lblSchoolId = new();
+    private readonly PictureBox picLogo = new();
     public MainForm()
     {
         Text = "City of Mati National High School (CMNHS) - 305680 DTR System";
         StartPosition = FormStartPosition.CenterScreen;
         WindowState = FormWindowState.Maximized;
-        MinimumSize = new Size(1200, 720);
+        MinimumSize = new Size(1024, 650);
+        AutoScaleMode = AutoScaleMode.Dpi;
         BackColor = bgGray;
 
+        ApplyResponsiveMetrics();
         BuildUi();
         WireButtonActions();
 
+        Resize += (_, _) => RebuildForResponsiveSize();
+
         Log("System ready.");
+        ApplyDynamicSchoolSettings();
+        ApplyLogoIcon();
+    }
+
+    private void ApplyResponsiveMetrics()
+    {
+        var area = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1300, 760);
+        compactMode = area.Width <= 1366 || area.Height <= 800 || ClientSize.Width <= 1366 || ClientSize.Height <= 800;
+
+        sidebarWidth = compactMode ? 220 : 280;
+        pagePadding = compactMode ? 14 : 28;
+        cardGap = compactMode ? 8 : 14;
+        actionButtonWidth = compactMode ? 142 : 170;
+        actionButtonHeight = compactMode ? 48 : 62;
+    }
+
+    private void RebuildForResponsiveSize()
+    {
+        bool wasCompact = compactMode;
+        ApplyResponsiveMetrics();
+
+        if (wasCompact != compactMode)
+            BuildUi();
     }
 
     private void BuildUi()
@@ -59,7 +95,7 @@ public class MainForm : Form
             BackColor = bgGray
         };
 
-        root.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 280));
+        root.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, sidebarWidth));
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
         root.Controls.Add(BuildSidebar(), 0, 0);
@@ -75,7 +111,7 @@ public class MainForm : Form
         {
             Dock = DockStyle.Fill,
             BackColor = depedBlue,
-            Padding = new Padding(18)
+            Padding = new Padding(compactMode ? 10 : 18)
         };
 
         var layout = new TableLayoutPanel
@@ -86,57 +122,85 @@ public class MainForm : Form
             BackColor = Color.Transparent
         };
 
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 115));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, compactMode ? 78 : 115));
         for (var i = 1; i <= 7; i++)
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, compactMode ? 45 : 58));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
-        var brand = new Panel
+        var brand = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
+            ColumnCount = 2,
+            RowCount = 2,
+            BackColor = Color.Transparent,
+            Padding = new Padding(0, compactMode ? 5 : 12, 0, 0)
+        };
+
+        brand.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, compactMode ? 44 : 62));
+        brand.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        brand.RowStyles.Add(new RowStyle(SizeType.Absolute, compactMode ? 28 : 32));
+        brand.RowStyles.Add(new RowStyle(SizeType.Absolute, compactMode ? 22 : 26));
+
+        var logo = new PictureBox
+        {
+            Dock = DockStyle.Fill,
+            SizeMode = PictureBoxSizeMode.Zoom,
             BackColor = Color.Transparent
         };
 
-        var logo = new Label
+        try
         {
-            Text = "🏫",
-            Font = new Font("Segoe UI Emoji", 30, FontStyle.Regular),
-            ForeColor = Color.White,
-            Location = new Point(0, 12),
-            Size = new Size(52, 52),
-            TextAlign = ContentAlignment.MiddleCenter
-        };
+            var settings = AppSettingsService.Load();
+
+            if (!string.IsNullOrWhiteSpace(settings.LogoPath) &&
+                File.Exists(settings.LogoPath))
+            {
+                using var fs = new FileStream(settings.LogoPath, FileMode.Open, FileAccess.Read);
+                using var img = Image.FromStream(fs);
+
+                logo.Image = new Bitmap(img);
+            }
+            else
+            {
+                logo.Image = CreateFallbackLogo(compactMode);
+            }
+        }
+        catch
+        {
+            logo.Image = CreateFallbackLogo(compactMode);
+        }
 
         var title = new Label
         {
             Text = "School DTR System",
-            Font = new Font("Segoe UI", 13, FontStyle.Bold),
+            Font = new Font("Segoe UI", compactMode ? 10 : 13, FontStyle.Bold),
             ForeColor = Color.White,
-            Location = new Point(68, 18),
-            Size = new Size(175, 24),
-            AutoEllipsis = true
+            Dock = DockStyle.Fill,
+            AutoEllipsis = true,
+            TextAlign = ContentAlignment.BottomLeft
         };
 
         var subtitle = new Label
         {
             Text = "Daily Time Record",
-            Font = new Font("Segoe UI", 9, FontStyle.Regular),
+            Font = new Font("Segoe UI", compactMode ? 8 : 9, FontStyle.Regular),
             ForeColor = Color.FromArgb(210, 220, 235),
-            Location = new Point(70, 44),
-            Size = new Size(170, 20),
-            AutoEllipsis = true
+            Dock = DockStyle.Fill,
+            AutoEllipsis = true,
+            TextAlign = ContentAlignment.TopLeft
         };
 
-        brand.Controls.Add(logo);
-        brand.Controls.Add(title);
-        brand.Controls.Add(subtitle);
+        brand.Controls.Add(logo, 0, 0);
+        brand.SetRowSpan(logo, 2);
+        brand.Controls.Add(title, 1, 0);
+        brand.Controls.Add(subtitle, 1, 1);
 
         layout.Controls.Add(brand, 0, 0);
         layout.Controls.Add(CreateMenuButton("📊  Dashboard", true), 0, 1);
         layout.Controls.Add(CreateMenuButton("👥  Employee Management"), 0, 2);
         layout.Controls.Add(CreateMenuButton("🕒  DTR / Time Logs"), 0, 3);
         layout.Controls.Add(CreateMenuButton("📝  Leave & Accomplishments"), 0, 4);
-        layout.Controls.Add(CreateMenuButton("🔐  Biometric Device Management"), 0, 5);
+        layout.Controls.Add(CreateMenuButton("🔐  Biometric Management"), 0, 5);
         layout.Controls.Add(CreateMenuButton("📈  Reports & Analytics"), 0, 6);
         layout.Controls.Add(CreateMenuButton("⚙️  System Settings"), 0, 7);
 
@@ -146,18 +210,18 @@ public class MainForm : Form
 
     private Button CreateMenuButton(string text, bool active = false)
     {
-        return new Button
+        var b = new Button
         {
             Text = text,
             Dock = DockStyle.Fill,
-            Height = 48,
             FlatStyle = FlatStyle.Flat,
             TextAlign = ContentAlignment.MiddleLeft,
-            Padding = new Padding(16, 0, 0, 0),
-            Font = new Font("Segoe UI", 10, FontStyle.Bold),
+            Padding = new Padding(compactMode ? 8 : 16, 0, 0, 0),
+            Font = new Font("Segoe UI", compactMode ? 8.5f : 10f, FontStyle.Bold),
             ForeColor = Color.White,
             BackColor = active ? depedBlueLight : depedBlue,
             Cursor = Cursors.Hand,
+            AutoEllipsis = true,
             FlatAppearance =
             {
                 BorderSize = 0,
@@ -165,6 +229,21 @@ public class MainForm : Form
                 MouseDownBackColor = Color.FromArgb(20, 65, 125)
             }
         };
+
+        if (text.Contains("Employee"))
+            b.Click += (_, _) => SafeRun("Manage Employees", () => OpenForm("EmployeeForm"));
+        else if (text.Contains("DTR"))
+            b.Click += (_, _) => SafeRun("View DTR", () => OpenForm("DtrViewerForm"));
+        else if (text.Contains("Leave"))
+            b.Click += (_, _) => UnderConstruction("Leave & Accomplishments");
+        else if (text.Contains("Biometric"))
+            b.Click += (_, _) => SafeRun("Device Setup", () => OpenForm("DeviceSetupForm"));
+        else if (text.Contains("Reports"))
+            b.Click += (_, _) => UnderConstruction("Reports & Analytics");
+        else if (text.Contains("Settings"))
+            b.Click += (_, _) => SafeRun("Settings", OpenSettings);
+
+        return b;
     }
 
     private Panel BuildMainDashboard()
@@ -173,22 +252,25 @@ public class MainForm : Form
         {
             Dock = DockStyle.Fill,
             BackColor = bgGray,
-            Padding = new Padding(28)
+            Padding = new Padding(pagePadding),
+            AutoScroll = true
         };
 
         var layout = new TableLayoutPanel
         {
-            Dock = DockStyle.Fill,
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
             ColumnCount = 1,
             RowCount = 5,
             BackColor = Color.Transparent
         };
 
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 76));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 115));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 150));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 150));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, compactMode ? 54 : 76));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, compactMode ? 86 : 115));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, compactMode ? 188 : 150));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, compactMode ? 225 : 300));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, compactMode ? 105 : 150));
 
         layout.Controls.Add(BuildTopBar(), 0, 0);
         layout.Controls.Add(BuildWelcomeCard(), 0, 1);
@@ -197,6 +279,9 @@ public class MainForm : Form
         layout.Controls.Add(BuildLogArea(), 0, 4);
 
         main.Controls.Add(layout);
+        main.Resize += (_, _) => layout.Width = main.ClientSize.Width - main.Padding.Left - main.Padding.Right - SystemInformation.VerticalScrollBarWidth;
+        layout.Width = main.ClientSize.Width - main.Padding.Left - main.Padding.Right - SystemInformation.VerticalScrollBarWidth;
+
         return main;
     }
 
@@ -211,27 +296,23 @@ public class MainForm : Form
         var title = new Label
         {
             Text = "Dashboard",
-            Font = new Font("Segoe UI", 24, FontStyle.Bold),
+            Font = new Font("Segoe UI", compactMode ? 19 : 24, FontStyle.Bold),
             ForeColor = textDark,
             AutoSize = true,
-            Location = new Point(0, 8)
+            Location = new Point(0, compactMode ? 6 : 8)
         };
 
         lblClock = new Label
         {
-            Font = new Font("Segoe UI", 11, FontStyle.Bold),
+            Font = new Font("Segoe UI", compactMode ? 9 : 11, FontStyle.Bold),
             ForeColor = Color.FromArgb(55, 65, 81),
             AutoSize = false,
             TextAlign = ContentAlignment.MiddleRight,
             Anchor = AnchorStyles.Top | AnchorStyles.Right,
-            Size = new Size(460, 36),
-            Location = new Point(top.Width - 460, 14)
+            Size = new Size(compactMode ? 335 : 460, compactMode ? 28 : 36)
         };
 
-        top.Resize += (_, _) =>
-        {
-            lblClock.Location = new Point(top.Width - lblClock.Width, 14);
-        };
+        top.Resize += (_, _) => lblClock.Location = new Point(Math.Max(0, top.Width - lblClock.Width), compactMode ? 9 : 14);
 
         top.Controls.Add(title);
         top.Controls.Add(lblClock);
@@ -245,19 +326,31 @@ public class MainForm : Form
         var title = new Label
         {
             Text = "Welcome to School Daily Time Record System",
-            Font = new Font("Segoe UI", 18, FontStyle.Bold),
+            Font = new Font("Segoe UI", compactMode ? 13 : 18, FontStyle.Bold),
             ForeColor = textDark,
-            AutoSize = true,
-            Location = new Point(24, 20)
+            AutoSize = false,
+            Location = new Point(compactMode ? 14 : 24, compactMode ? 12 : 20),
+            Size = new Size(900, compactMode ? 24 : 32),
+            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+            AutoEllipsis = true
         };
 
         var desc = new Label
         {
-            Text = "Manage employee attendance, biometric logs, CSC Form 48 printing, backups, audit logs, and ZKTeco K14 synchronization in one dashboard.",
-            Font = new Font("Segoe UI", 10, FontStyle.Regular),
+            Text = "Manage attendance, biometric logs, CSC Form 48 printing, backups, audit logs, and ZKTeco K14 synchronization.",
+            Font = new Font("Segoe UI", compactMode ? 8.5f : 10f, FontStyle.Regular),
             ForeColor = textMuted,
-            AutoSize = true,
-            Location = new Point(26, 58)
+            AutoSize = false,
+            Location = new Point(compactMode ? 16 : 26, compactMode ? 40 : 58),
+            Size = new Size(950, compactMode ? 22 : 24),
+            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+            AutoEllipsis = true
+        };
+
+        card.Resize += (_, _) =>
+        {
+            title.Width = card.ClientSize.Width - title.Left - 18;
+            desc.Width = card.ClientSize.Width - desc.Left - 18;
         };
 
         card.Controls.Add(title);
@@ -270,19 +363,29 @@ public class MainForm : Form
         var grid = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
-            ColumnCount = 4,
-            RowCount = 1,
+            ColumnCount = compactMode ? 2 : 4,
+            RowCount = compactMode ? 2 : 1,
             BackColor = Color.Transparent,
-            Padding = new Padding(0, 12, 0, 12)
+            Padding = new Padding(0, compactMode ? 6 : 12, 0, compactMode ? 6 : 12)
         };
 
-        for (var i = 0; i < 4; i++)
-            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+        if (compactMode)
+        {
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            grid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+            grid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+        }
+        else
+        {
+            for (var i = 0; i < 4; i++)
+                grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+        }
 
         grid.Controls.Add(CreateStatCard("👥", "Employees", "Active Personnel", "Blue"), 0, 0);
         grid.Controls.Add(CreateStatCard("🕒", "Time Logs", "Today's Records", "Blue"), 1, 0);
-        grid.Controls.Add(CreateStatCard("⚠️", "Pending Issues", "Logs to Review", "Red"), 2, 0);
-        grid.Controls.Add(CreateStatCard("🖨️", "Reports", "Ready to Print", "Blue"), 3, 0);
+        grid.Controls.Add(CreateStatCard("⚠️", "Pending Issues", "Logs to Review", "Red"), compactMode ? 0 : 2, compactMode ? 1 : 0);
+        grid.Controls.Add(CreateStatCard("🖨️", "Reports", "Ready to Print", "Blue"), compactMode ? 1 : 3, compactMode ? 1 : 0);
 
         return grid;
     }
@@ -290,37 +393,43 @@ public class MainForm : Form
     private Panel CreateStatCard(string icon, string title, string subtitle, string accent)
     {
         var card = CreateCard();
-        card.Margin = new Padding(0, 0, 16, 0);
+        card.Margin = new Padding(0, 0, compactMode ? 8 : 16, compactMode ? 8 : 0);
         card.Padding = new Padding(0);
 
         var iconLabel = new Label
         {
             Text = icon,
-            Font = new Font("Segoe UI Emoji", 24, FontStyle.Regular),
+            Font = new Font("Segoe UI Emoji", compactMode ? 19 : 24, FontStyle.Regular),
             ForeColor = Color.FromArgb(17, 24, 39),
-            Location = new Point(22, 30),
-            Size = new Size(52, 52),
+            Location = new Point(compactMode ? 12 : 22, compactMode ? 16 : 30),
+            Size = new Size(compactMode ? 40 : 52, compactMode ? 40 : 52),
             TextAlign = ContentAlignment.MiddleCenter
         };
 
         var titleLabel = new Label
         {
             Text = title,
-            Font = new Font("Segoe UI", 12, FontStyle.Bold),
+            Font = new Font("Segoe UI", compactMode ? 10 : 12, FontStyle.Bold),
             ForeColor = textDark,
-            Location = new Point(92, 32),
-            Size = new Size(210, 24),
+            Location = new Point(compactMode ? 62 : 92, compactMode ? 18 : 32),
+            Size = new Size(210, compactMode ? 22 : 24),
             AutoEllipsis = true
         };
 
         var subLabel = new Label
         {
             Text = subtitle,
-            Font = new Font("Segoe UI", 8, FontStyle.Regular),
+            Font = new Font("Segoe UI", compactMode ? 7.8f : 8f, FontStyle.Regular),
             ForeColor = accent == "Red" ? depedRed : textMuted,
-            Location = new Point(94, 58),
+            Location = new Point(compactMode ? 64 : 94, compactMode ? 42 : 58),
             Size = new Size(210, 20),
             AutoEllipsis = true
+        };
+
+        card.Resize += (_, _) =>
+        {
+            titleLabel.Width = Math.Max(50, card.ClientSize.Width - titleLabel.Left - 10);
+            subLabel.Width = Math.Max(50, card.ClientSize.Width - subLabel.Left - 10);
         };
 
         card.Controls.Add(iconLabel);
@@ -332,31 +441,33 @@ public class MainForm : Form
     private Panel BuildActionArea()
     {
         var card = CreateCard();
-        card.Padding = new Padding(24);
+        card.Padding = new Padding(compactMode ? 14 : 24);
 
         var title = new Label
         {
             Text = "Quick Actions",
-            Font = new Font("Segoe UI", 16, FontStyle.Bold),
+            Font = new Font("Segoe UI", compactMode ? 13 : 16, FontStyle.Bold),
             ForeColor = textDark,
             AutoSize = true,
-            Location = new Point(24, 22)
+            Location = new Point(compactMode ? 14 : 24, compactMode ? 12 : 22)
         };
 
         var subtitle = new Label
         {
             Text = "Frequently used DTR, biometric, reporting, and maintenance tools.",
-            Font = new Font("Segoe UI", 9, FontStyle.Regular),
+            Font = new Font("Segoe UI", compactMode ? 8 : 9, FontStyle.Regular),
             ForeColor = textMuted,
-            AutoSize = true,
-            Location = new Point(26, 50)
+            AutoSize = false,
+            Location = new Point(compactMode ? 16 : 26, compactMode ? 38 : 50),
+            Size = new Size(800, 20),
+            AutoEllipsis = true,
+            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
 
         var actions = new FlowLayoutPanel
         {
-            Location = new Point(24, 85),
+            Location = new Point(compactMode ? 14 : 24, compactMode ? 65 : 85),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
-            Size = new Size(card.Width - 48, card.Height - 105),
             FlowDirection = FlowDirection.LeftToRight,
             WrapContents = true,
             AutoScroll = true,
@@ -365,7 +476,8 @@ public class MainForm : Form
 
         card.Resize += (_, _) =>
         {
-            actions.Size = new Size(card.Width - 48, card.Height - 105);
+            actions.Size = new Size(card.ClientSize.Width - (compactMode ? 28 : 48), card.ClientSize.Height - actions.Top - 12);
+            subtitle.Width = card.ClientSize.Width - subtitle.Left - 16;
         };
 
         ConfigureActionButtons(actions);
@@ -426,15 +538,15 @@ public class MainForm : Form
     {
         var card = CreateCard();
         card.Margin = new Padding(0);
-        card.Padding = new Padding(16);
+        card.Padding = new Padding(compactMode ? 10 : 16);
 
         var title = new Label
         {
             Text = "Activity Log",
-            Font = new Font("Segoe UI", 11, FontStyle.Bold),
+            Font = new Font("Segoe UI", compactMode ? 9 : 11, FontStyle.Bold),
             ForeColor = textDark,
             Dock = DockStyle.Top,
-            Height = 26
+            Height = compactMode ? 22 : 26
         };
 
         txtLog.Dock = DockStyle.Fill;
@@ -444,7 +556,7 @@ public class MainForm : Form
         txtLog.BorderStyle = BorderStyle.None;
         txtLog.BackColor = Color.White;
         txtLog.ForeColor = Color.FromArgb(55, 65, 81);
-        txtLog.Font = new Font("Consolas", 9);
+        txtLog.Font = new Font("Consolas", compactMode ? 8 : 9);
 
         card.Controls.Add(txtLog);
         card.Controls.Add(title);
@@ -457,24 +569,25 @@ public class MainForm : Form
         {
             Dock = DockStyle.Fill,
             BackColor = Color.White,
-            Margin = new Padding(0, 0, 0, 14),
-            Padding = new Padding(18),
+            Margin = new Padding(0, 0, 0, cardGap),
+            Padding = new Padding(compactMode ? 10 : 18),
             BorderStyle = BorderStyle.FixedSingle
         };
     }
 
     private void StylePrimaryButton(Button button, string icon)
     {
-        button.Width = 170;
-        button.Height = 62;
-        button.Margin = new Padding(0, 0, 14, 14);
+        button.Width = actionButtonWidth;
+        button.Height = actionButtonHeight;
+        button.Margin = new Padding(0, 0, compactMode ? 8 : 14, compactMode ? 8 : 14);
         button.Text = $"{icon}  {button.Text}";
-        button.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+        button.Font = new Font("Segoe UI", compactMode ? 8.6f : 10f, FontStyle.Bold);
         button.ForeColor = Color.White;
         button.BackColor = depedBlueLight;
         button.FlatStyle = FlatStyle.Flat;
         button.TextAlign = ContentAlignment.MiddleCenter;
         button.Cursor = Cursors.Hand;
+        button.AutoEllipsis = true;
         button.FlatAppearance.BorderSize = 0;
         button.FlatAppearance.MouseOverBackColor = Color.FromArgb(20, 75, 160);
         button.FlatAppearance.MouseDownBackColor = Color.FromArgb(15, 60, 130);
@@ -492,7 +605,7 @@ public class MainForm : Form
 
     private void ClockTimer_Tick(object? sender, EventArgs e)
     {
-        lblClock.Text = DateTime.Now.ToString("dddd, MMMM dd, yyyy • hh:mm:ss tt");
+        lblClock.Text = DateTime.Now.ToString(compactMode ? "MMM dd, yyyy • hh:mm tt" : "dddd, MMMM dd, yyyy • hh:mm:ss tt");
     }
 
     private void WireButtonActions()
@@ -512,6 +625,18 @@ public class MainForm : Form
         btnBackup.Click += (_, _) => SafeRun("Backup DB", BackupDatabase);
         btnAuditLogs.Click += (_, _) => SafeRun("Audit Logs", OpenAuditLogs);
         btnMappingCheck.Click += (_, _) => SafeRun("Mapping Check", OpenMappingCheck);
+    }
+
+    private void UnderConstruction(string feature)
+    {
+        MessageBox.Show(
+            $"{feature} is still under construction in this beta version.",
+            "Beta Feature",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Information
+        );
+
+        Log(feature + " clicked. Feature is still under construction.");
     }
 
     private void SafeRun(string title, Action action)
@@ -680,5 +805,81 @@ public class MainForm : Form
     private void Log(string message)
     {
         txtLog.AppendText($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}{Environment.NewLine}");
+    }
+    private void ApplyDynamicSchoolSettings()
+    {
+        var s = AppSettingsService.Load();
+
+        Text = $"{s.SchoolName} - School DTR System";
+
+        lblSchoolName.Text = s.SchoolName;
+        lblSchoolId.Text = $"School ID: {s.SchoolId}";
+
+    string logoPath = s.LogoPath;
+
+    if (string.IsNullOrWhiteSpace(logoPath) || !File.Exists(logoPath))
+    {
+        logoPath = Path.Combine(
+            Environment.GetFolderPath(
+                Environment.SpecialFolder.CommonApplicationData),
+            "SchoolDTR",
+            "assets",
+            "default_logo.png"
+        );
+    }
+
+    if (File.Exists(logoPath))
+    {
+        using var img = Image.FromFile(logoPath);
+        picLogo.Image = new Bitmap(img);
+
+        using var bmp = new Bitmap(logoPath);
+        Icon = Icon.FromHandle(bmp.GetHicon());
+    }
+    }
+    private void ApplyLogoIcon()
+    {
+        var settings = AppSettingsService.Load();
+
+        if (string.IsNullOrWhiteSpace(settings.LogoPath))
+            return;
+
+        if (!File.Exists(settings.LogoPath))
+            return;
+
+        try
+        {
+            using var bmp = new Bitmap(settings.LogoPath);
+            IntPtr hIcon = bmp.GetHicon();
+            Icon = Icon.FromHandle(hIcon);
+        }
+        catch
+        {
+            // Ignore invalid image/icon errors
+        }
+    }
+    private Image CreateFallbackLogo(bool compactMode)
+    {
+        int size = compactMode ? 48 : 64;
+        var bmp = new Bitmap(size, size);
+
+        using var g = Graphics.FromImage(bmp);
+        g.Clear(Color.Transparent);
+
+        using var font = new Font("Segoe UI Emoji", compactMode ? 24 : 30);
+        using var brush = new SolidBrush(Color.White);
+
+        var text = "🏫";
+        var textSize = g.MeasureString(text, font);
+
+        g.DrawString(
+            text,
+            font,
+            brush,
+            (size - textSize.Width) / 2,
+            (size - textSize.Height) / 2
+        );
+
+        return bmp;
     }
 }

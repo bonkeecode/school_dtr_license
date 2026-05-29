@@ -9,7 +9,18 @@ internal static class Program
     static void Main()
     {
         ApplicationConfiguration.Initialize();
+        
+    // if (!AppIntegrityService.IsAppIntact())
+    // {
+    //     MessageBox.Show(
+    //         "System files were modified or corrupted. Please reinstall School DTR.",
+    //         "Integrity Check Failed",
+    //         MessageBoxButtons.OK,
+    //         MessageBoxIcon.Error
+    //     );
 
+    //     return;
+    // }
         var licensed = LicenseService.IsLicensedAsync()
             .GetAwaiter()
             .GetResult();

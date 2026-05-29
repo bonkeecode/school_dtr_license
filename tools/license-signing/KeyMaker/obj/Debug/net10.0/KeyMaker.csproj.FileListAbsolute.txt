@@ -1,0 +1,15 @@
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\KeyMaker\bin\Debug\net10.0\KeyMaker.exe
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\KeyMaker\bin\Debug\net10.0\KeyMaker.deps.json
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\KeyMaker\bin\Debug\net10.0\KeyMaker.runtimeconfig.json
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\KeyMaker\bin\Debug\net10.0\KeyMaker.dll
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\KeyMaker\bin\Debug\net10.0\KeyMaker.pdb
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\KeyMaker\obj\Debug\net10.0\KeyMaker.GeneratedMSBuildEditorConfig.editorconfig
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\KeyMaker\obj\Debug\net10.0\KeyMaker.AssemblyInfoInputs.cache
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\KeyMaker\obj\Debug\net10.0\KeyMaker.AssemblyInfo.cs
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\KeyMaker\obj\Debug\net10.0\KeyMaker.csproj.CoreCompileInputs.cache
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\KeyMaker\obj\Debug\net10.0\KeyMaker.sourcelink.json
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\KeyMaker\obj\Debug\net10.0\KeyMaker.dll
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\KeyMaker\obj\Debug\net10.0\refint\KeyMaker.dll
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\KeyMaker\obj\Debug\net10.0\KeyMaker.pdb
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\KeyMaker\obj\Debug\net10.0\KeyMaker.genruntimeconfig.cache
+E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\tools\license-signing\KeyMaker\obj\Debug\net10.0\ref\KeyMaker.dll

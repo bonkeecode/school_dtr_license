@@ -72,6 +72,16 @@ public class DtrViewerForm : Form
         };
         btnPrint.Click += (_, _) => PrintSelectedEmployee();
 
+
+        var btnPdf = new Button
+        {
+            Text = "Export Selected PDF",
+            Width = 170,
+            Height = 35
+        };
+        btnPdf.Click += (_, _) => ExportSelectedEmployeeToPdf();
+
+
         top.Controls.Add(new Label
         {
             Text = "Month:",
@@ -88,6 +98,7 @@ public class DtrViewerForm : Form
         });
         top.Controls.Add(txtSearch);
         top.Controls.Add(btnLoad);
+        top.Controls.Add(btnPdf);
         top.Controls.Add(btnPrint);
         gridEmployees.Dock = DockStyle.Fill;
         gridEmployees.ReadOnly = true;
@@ -329,14 +340,48 @@ public class DtrViewerForm : Form
                     );
                 };
 
-                using var preview = new PrintPreviewDialog
+                using var previewForm = new Form
                 {
-                    Document = printDoc,
-                    Width = 1200,
-                    Height = 900
+                    Text = "Print Preview",
+                    Width = 1000,
+                    Height = 700,
+                    StartPosition = FormStartPosition.CenterParent
                 };
 
-                preview.ShowDialog(this);
+                var preview = new PrintPreviewControl
+                {
+                    Document = printDoc,
+                    Dock = DockStyle.Fill,
+                    Zoom = 1.0
+                };
+
+                var btnPrint = new Button
+                {
+                    Text = "Print",
+                    Dock = DockStyle.Top,
+                    Height = 40
+                };
+
+                btnPrint.Click += (_, _) =>
+                {
+                    using var dlg = new PrintDialog
+                    {
+                        Document = printDoc,
+                        AllowSomePages = true,
+                        UseEXDialog = true
+                    };
+
+                    if (dlg.ShowDialog(previewForm) == DialogResult.OK)
+                    {
+                        printDoc.PrinterSettings = dlg.PrinterSettings;
+                        printDoc.Print();
+                    }
+                };
+
+                previewForm.Controls.Add(preview);
+                previewForm.Controls.Add(btnPrint);
+
+                previewForm.ShowDialog(this);
             }
             catch (Exception ex)
             {
@@ -413,5 +458,151 @@ public class DtrViewerForm : Form
 
         return "";
     }
-    
+    private void ExportSelectedEmployeeToPdf()
+{
+    var data = GetSelectedEmployeePrintData();
+
+    if (data == null)
+    {
+        MessageBox.Show("Please select an employee with DTR records first.");
+        return;
+    }
+
+    using var save = new SaveFileDialog
+    {
+        Title = "Export Selected DTR to PDF",
+        Filter = "PDF file (*.pdf)|*.pdf",
+        FileName = $"DTR_{data.EmployeeName}_{dtMonth.Value:yyyy_MM}.pdf"
+            .Replace("/", "-")
+            .Replace("\\", "-")
+            .Replace(":", "-")
+    };
+
+    if (save.ShowDialog(this) != DialogResult.OK)
+        return;
+
+    using var doc = new PrintDocument();
+
+    doc.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
+    doc.DefaultPageSettings.Margins = new Margins(50, 50, 50, 50);
+    doc.DefaultPageSettings.Landscape = false;
+
+    doc.PrintPage += (_, e) =>
+    {
+        if (e.Graphics != null)
+            CscForm48Printer.DrawForm(e.Graphics, e.PageBounds, data);
+
+        e.HasMorePages = false;
+    };
+
+    try
+    {
+        doc.PrinterSettings = new PrinterSettings
+        {
+            PrinterName = "Microsoft Print to PDF",
+            PrintToFile = true,
+            PrintFileName = save.FileName
+        };
+
+        doc.PrintController = new StandardPrintController();
+
+        if (!doc.PrinterSettings.IsValid)
+            throw new Exception("Microsoft Print to PDF printer is not available.");
+
+        doc.Print();
+
+        MessageBox.Show("Selected employee DTR exported to PDF.");
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show("PDF export failed: " + ex.Message);
+    }
+}
+
+private EmployeeDtrPrintData? GetSelectedEmployeePrintData()
+{
+    if (gridEmployees.CurrentRow == null)
+        return null;
+
+    var employeeNo = Convert.ToString(gridEmployees.CurrentRow.Cells["employee_no"].Value);
+
+    if (string.IsNullOrWhiteSpace(employeeNo))
+        return null;
+
+    return BuildSelectedEmployeePrintData();
+}
+    private EmployeeDtrPrintData? BuildSelectedEmployeePrintData()
+{
+    if (gridEmployees.CurrentRow == null)
+        return null;
+
+    string biometricUserId =
+        Convert.ToString(gridEmployees.CurrentRow.Cells["biometric_user_id"].Value) ?? "";
+
+    if (string.IsNullOrWhiteSpace(biometricUserId))
+        return null;
+
+    using var conn = Db.GetConnection();
+    conn.Open();
+
+    using var cmd = conn.CreateCommand();
+    cmd.CommandText = @"
+        SELECT
+            employee_no,
+            employee_name,
+            employee_id,
+            '' AS school_id,
+            log_date AS work_date,
+            morning_in,
+            morning_out,
+            afternoon_in,
+            afternoon_out,
+            remarks
+        FROM biometric_dtr
+        WHERE biometric_user_id = @biometricUserId
+            AND YEAR(log_date) = @year
+            AND MONTH(log_date) = @month
+        ORDER BY log_date;
+    ";
+
+    cmd.Parameters.AddWithValue("@biometricUserId", biometricUserId);
+    cmd.Parameters.AddWithValue("@year", dtMonth.Value.Year);
+    cmd.Parameters.AddWithValue("@month", dtMonth.Value.Month);
+
+    var table = new DataTable();
+
+    using (var da = new MySqlDataAdapter(cmd))
+    {
+        da.Fill(table);
+    }
+
+    if (table.Rows.Count == 0)
+        return null;
+
+    var first = table.Rows[0];
+
+    var data = new EmployeeDtrPrintData
+    {
+        EmployeeNo = Convert.ToString(first["employee_no"]) ?? "",
+        EmployeeName = Convert.ToString(first["employee_name"]) ?? "",
+        PositionTitle = "",
+        SchoolId = Convert.ToString(first["school_id"]) ?? "",
+        Month = new DateTime(dtMonth.Value.Year, dtMonth.Value.Month, 1)
+    };
+
+    foreach (DataRow row in table.Rows)
+    {
+        data.Rows.Add(new EmployeeDtrPrintRow
+        {
+            Date = Convert.ToDateTime(row["work_date"]),
+            MorningIn = Convert.ToString(row["morning_in"]) ?? "",
+            MorningOut = Convert.ToString(row["morning_out"]) ?? "",
+            AfternoonIn = Convert.ToString(row["afternoon_in"]) ?? "",
+            AfternoonOut = Convert.ToString(row["afternoon_out"]) ?? "",
+            Remarks = Convert.ToString(row["remarks"]) ?? ""
+        });
+    }
+
+    return data;
+}
 }

@@ -6,6 +6,13 @@
       "school_name": "CMNHS",
       "expires_on": "2026-06-30",
       "is_active": true
+    },
+    {
+      "school_id": "305680",
+      "machine_hash": "A100E219C3805BAC29BD2135790718809C3A42ABEBE1F15301E3A7E98FD28B6F",
+      "school_name": "CMNHS",
+      "expires_on": "2026-06-30",
+      "is_active": true
     }
   ]
 }

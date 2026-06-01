@@ -14,8 +14,15 @@
         "school_name": "CMNHS",
         "expires_on": "2026-06-30",
         "is_active": true
+      },
+      {
+        "school_id": "305680",
+        "machine_hash": "A12FF0FEBC596CAEE337B4F56856D06475363CBC16E3A3521FC281D5708A5DDD",
+        "school_name": "CMNHS",
+        "expires_on": "2026-06-30",
+        "is_active": true
       }
     ]
   },
-  "signature": "g5iAaWgmaibLsc7Cu2lDWdPYb3VKMeLaOwKgFsKKxKs4kHWZ6UOxsz8mekWmaHhlxnjKwKWa5Z1eHNmQd4v1c3jLwkdyWopPzeHVFI3ylfd8Q7iCssUqhygcCQU7p\u002Bol5UVIOCUovj9kIhTBmy0tEhAInFLkfKIduaON5EQI8khkTlDbLbihw5HlCPPU\u002B4o4P4H5lDALxrjK\u002B7q7OoqCEL0SQPWGPGtLsWgtzQB6/wk3if0TuNxOOQ7v10wg2XaEDOAY0m3nwDahedueYQ6j4fCFyyZ6si9vIseZwvApp5fsuJ\u002BPAexxQYFgj01MvbUcAYx22MkiYYH5Dycpmsj9Hw=="
+  "signature": "g5iAaWgmaibLsc7Cu2lDWdPYb3VKMeLaOwKgFsKKxKs4kHWZ6UOxsz8mekWmaHhlxnjKwKWa5Z1eHNmQd4v1c3jLwkdyWopPzeHVFI3ylfd8Q7iCssUqhygcCQU7p+ol5UVIOCUovj9kIhTBmy0tEhAInFLkfKIduaON5EQI8khkTlDbLbihw5HlCPPU+4o4P4H5lDALxrjK+7q7OoqCEL0SQPWGPGtLsWgtzQB6/wk3if0TuNxOOQ7v10wg2XaEDOAY0m3nwDahedueYQ6j4fCFyyZ6si9vIseZwvApp5fsuJ+PAexxQYFgj01MvbUcAYx22MkiYYH5Dycpmsj9Hw=="
 }

@@ -14,6 +14,7 @@ public static class DtrEventApplier
         var start = new DateTime(year, month, 1);
         var end = start.AddMonths(1).AddDays(-1);
 
+        EnsureEventDayScopeColumn(conn);
         NormalizeDtrEmployeeColumns(conn, start, end);
 
         // Order matters:
@@ -21,6 +22,26 @@ public static class DtrEventApplier
         // 2. Assigned events after, so events override time logs/weekends
         ApplyWeekends(conn, start, end);
         ApplyAssignedEvents(conn, start, end);
+    }
+
+    private static void EnsureEventDayScopeColumn(MySqlConnection conn)
+    {
+        try
+        {
+            using var cmd = new MySqlCommand(@"
+                ALTER TABLE dtr_events
+                ADD COLUMN day_scope VARCHAR(20)
+                NOT NULL DEFAULT 'WHOLE_DAY'
+                AFTER event_type;
+            ", conn);
+
+            cmd.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Column already exists or table is not created yet.
+            // EventForm also creates this column. This is only a safe fallback.
+        }
     }
 
     private static void NormalizeDtrEmployeeColumns(
@@ -84,6 +105,7 @@ public static class DtrEventApplier
                 e.event_title,
                 e.date_from,
                 e.date_to,
+                COALESCE(NULLIF(e.day_scope, ''), 'WHOLE_DAY') AS day_scope,
                 a.employee_no
             FROM dtr_events e
             INNER JOIN dtr_event_assignments a
@@ -105,6 +127,7 @@ public static class DtrEventApplier
                     EventTitle = Convert.ToString(reader["event_title"]) ?? "",
                     DateFrom = Convert.ToDateTime(reader["date_from"]).Date,
                     DateTo = Convert.ToDateTime(reader["date_to"]).Date,
+                    DayScope = NormalizeDayScope(Convert.ToString(reader["day_scope"])),
                     EmployeeNo = Convert.ToString(reader["employee_no"]) ?? ""
                 });
             }
@@ -118,17 +141,42 @@ public static class DtrEventApplier
             var from = item.DateFrom < start ? start : item.DateFrom;
             var to = item.DateTo > end ? end : item.DateTo;
 
-            using var eventUpdateCmd = new MySqlCommand(@"
-                UPDATE biometric_dtr
-                SET
-                    morning_in = @label,
-                    morning_out = @label,
-                    afternoon_in = @label,
-                    afternoon_out = @label,
-                    remarks = ''
-                WHERE COALESCE(NULLIF(employee_no, ''), NULLIF(employee_id, '')) = @employee_no
-                  AND log_date BETWEEN @from AND @to;
-            ", conn);
+            string updateSql = item.DayScope switch
+            {
+                "MORNING" => @"
+                    UPDATE biometric_dtr
+                    SET
+                        morning_in = @label,
+                        morning_out = @label,
+                        remarks = ''
+                    WHERE COALESCE(NULLIF(employee_no, ''), NULLIF(employee_id, '')) = @employee_no
+                      AND log_date BETWEEN @from AND @to;
+                ",
+
+                "AFTERNOON" => @"
+                    UPDATE biometric_dtr
+                    SET
+                        afternoon_in = @label,
+                        afternoon_out = @label,
+                        remarks = ''
+                    WHERE COALESCE(NULLIF(employee_no, ''), NULLIF(employee_id, '')) = @employee_no
+                      AND log_date BETWEEN @from AND @to;
+                ",
+
+                _ => @"
+                    UPDATE biometric_dtr
+                    SET
+                        morning_in = @label,
+                        morning_out = @label,
+                        afternoon_in = @label,
+                        afternoon_out = @label,
+                        remarks = ''
+                    WHERE COALESCE(NULLIF(employee_no, ''), NULLIF(employee_id, '')) = @employee_no
+                      AND log_date BETWEEN @from AND @to;
+                "
+            };
+
+            using var eventUpdateCmd = new MySqlCommand(updateSql, conn);
 
             eventUpdateCmd.Parameters.AddWithValue("@label", item.EventTitle);
             eventUpdateCmd.Parameters.AddWithValue("@employee_no", item.EmployeeNo);
@@ -139,11 +187,24 @@ public static class DtrEventApplier
         }
     }
 
+    private static string NormalizeDayScope(string? value)
+    {
+        value = (value ?? "").Trim().ToUpperInvariant();
+
+        return value switch
+        {
+            "MORNING" => "MORNING",
+            "AFTERNOON" => "AFTERNOON",
+            _ => "WHOLE_DAY"
+        };
+    }
+
     private class EventAssignment
     {
         public string EventTitle { get; set; } = "";
         public DateTime DateFrom { get; set; }
         public DateTime DateTo { get; set; }
+        public string DayScope { get; set; } = "WHOLE_DAY";
         public string EmployeeNo { get; set; } = "";
     }
 }

@@ -4,10 +4,6 @@ using SchoolDTR.Models;
 
 namespace SchoolDTR.Forms;
 
-
-
-
-
 public static class CscForm48Printer
 {
     public static void DrawForm(Graphics g, Rectangle bounds, EmployeeDtrPrintData data)
@@ -45,7 +41,6 @@ public static class CscForm48Printer
         y += 22;
 
         int tableX = x;
-        int tableY = y;
 
         int colDay = 65;
         int colMorningArr = 130;
@@ -54,22 +49,28 @@ public static class CscForm48Printer
         int colAfternoonDep = 130;
         int colOver = 145;
 
-        int tableW = colDay + colMorningArr + colMorningDep + colAfternoonArr + colAfternoonDep + colOver;
         int header1H = 18;
         int header2H = 18;
         int rowH = 18;
 
+        int morningX = tableX + colDay;
+        int morningDepX = morningX + colMorningArr;
+        int afternoonX = morningDepX + colMorningDep;
+        int afternoonDepX = afternoonX + colAfternoonArr;
+        int overX = afternoonDepX + colAfternoonDep;
+        int logColumnsW = colMorningArr + colMorningDep + colAfternoonArr + colAfternoonDep;
+
         DrawCell(g, "Day", fontSmall, tableX, y, colDay, header1H + header2H);
-        DrawCell(g, "Morning", fontSmall, tableX + colDay, y, colMorningArr + colMorningDep, header1H);
-        DrawCell(g, "Afternoon", fontSmall, tableX + colDay + colMorningArr + colMorningDep, y, colAfternoonArr + colAfternoonDep, header1H);
-        DrawCell(g, "Over/\nUnder time", fontSmall, tableX + colDay + colMorningArr + colMorningDep + colAfternoonArr + colAfternoonDep, y, colOver, header1H + header2H);
+        DrawCell(g, "Morning", fontSmall, morningX, y, colMorningArr + colMorningDep, header1H);
+        DrawCell(g, "Afternoon", fontSmall, afternoonX, y, colAfternoonArr + colAfternoonDep, header1H);
+        DrawCell(g, "Over/\nUnder time", fontSmall, overX, y, colOver, header1H + header2H);
 
         y += header1H;
 
-        DrawCell(g, "Arrival", fontTiny, tableX + colDay, y, colMorningArr, header2H);
-        DrawCell(g, "Departure", fontTiny, tableX + colDay + colMorningArr, y, colMorningDep, header2H);
-        DrawCell(g, "Arrival", fontTiny, tableX + colDay + colMorningArr + colMorningDep, y, colAfternoonArr, header2H);
-        DrawCell(g, "Departure", fontTiny, tableX + colDay + colMorningArr + colMorningDep + colAfternoonArr, y, colAfternoonDep, header2H);
+        DrawCell(g, "Arrival", fontTiny, morningX, y, colMorningArr, header2H);
+        DrawCell(g, "Departure", fontTiny, morningDepX, y, colMorningDep, header2H);
+        DrawCell(g, "Arrival", fontTiny, afternoonX, y, colAfternoonArr, header2H);
+        DrawCell(g, "Departure", fontTiny, afternoonDepX, y, colAfternoonDep, header2H);
 
         y += header2H;
 
@@ -84,7 +85,6 @@ public static class CscForm48Printer
             if (row != null && row.MergedStatus != "")
             {
                 string currentStatus = row.MergedStatus;
-
                 int spanDays = 1;
 
                 while (day + spanDays <= daysInMonth)
@@ -99,39 +99,15 @@ public static class CscForm48Printer
 
                 int mergedHeight = rowH * spanDays;
 
-                DrawCell(
-                    g,
-                    currentStatus,
-                    fontBold,
-                    tableX + colDay,
-                    y,
-                    colMorningArr + colMorningDep + colAfternoonArr + colAfternoonDep,
-                    mergedHeight
-                );
+                DrawCell(g, currentStatus, fontBold, morningX, y, logColumnsW, mergedHeight);
 
                 for (int i = 0; i < spanDays; i++)
                 {
-                    DrawCell(
-                        g,
-                        "",
-                        fontSmall,
-                        tableX + colDay + colMorningArr + colMorningDep + colAfternoonArr + colAfternoonDep,
-                        y + (rowH * i),
-                        colOver,
-                        rowH
-                    );
+                    DrawCell(g, "", fontSmall, overX, y + (rowH * i), colOver, rowH);
 
                     if (i > 0)
                     {
-                        DrawCell(
-                            g,
-                            (day + i).ToString(),
-                            fontBold,
-                            tableX,
-                            y + (rowH * i),
-                            colDay,
-                            rowH
-                        );
+                        DrawCell(g, (day + i).ToString(), fontBold, tableX, y + (rowH * i), colDay, rowH);
                     }
                 }
 
@@ -142,80 +118,45 @@ public static class CscForm48Printer
 
             if (row != null)
             {
-                // Correct mapping:
-                // Morning Arrival  -> MorningIn
-                // Morning Departure -> MorningOut
-                // Afternoon Arrival -> AfternoonIn
-                // Afternoon Departure -> AfternoonOut
-
-                DrawCell(
+                DrawTimeCells(
                     g,
-                    row.MorningIn ?? "",
+                    row,
                     fontSmall,
-                    tableX + colDay,
-                    y,
+                    fontBold,
+                    morningX,
+                    morningDepX,
+                    afternoonX,
+                    afternoonDepX,
                     colMorningArr,
-                    rowH
-                );
-
-                DrawCell(
-                    g,
-                    row.MorningOut ?? "",
-                    fontSmall,
-                    tableX + colDay + colMorningArr,
-                    y,
                     colMorningDep,
-                    rowH
-                );
-
-                DrawCell(
-                    g,
-                    row.AfternoonIn ?? "",
-                    fontSmall,
-                    tableX + colDay + colMorningArr + colMorningDep,
-                    y,
                     colAfternoonArr,
-                    rowH
-                );
-
-                DrawCell(
-                    g,
-                    row.AfternoonOut ?? "",
-                    fontSmall,
-                    tableX + colDay + colMorningArr + colMorningDep + colAfternoonArr,
-                    y,
                     colAfternoonDep,
-                    rowH
-                );
+                    y,
+                    rowH);
             }
             else
             {
-                // Empty row
-                DrawCell(g, "", fontSmall, tableX + colDay, y, colMorningArr, rowH);
-                DrawCell(g, "", fontSmall, tableX + colDay + colMorningArr, y, colMorningDep, rowH);
-                DrawCell(g, "", fontSmall, tableX + colDay + colMorningArr + colMorningDep, y, colAfternoonArr, rowH);
-                DrawCell(g, "", fontSmall,
-                    tableX + colDay + colMorningArr + colMorningDep + colAfternoonArr,
-                    y,
-                    colAfternoonDep,
-                    rowH);
+                DrawCell(g, "", fontSmall, morningX, y, colMorningArr, rowH);
+                DrawCell(g, "", fontSmall, morningDepX, y, colMorningDep, rowH);
+                DrawCell(g, "", fontSmall, afternoonX, y, colAfternoonArr, rowH);
+                DrawCell(g, "", fontSmall, afternoonDepX, y, colAfternoonDep, rowH);
             }
 
-            DrawCell(g, "", fontSmall, tableX + colDay + colMorningArr + colMorningDep + colAfternoonArr + colAfternoonDep, y, colOver, rowH);
+            DrawCell(g, "", fontSmall, overX, y, colOver, rowH);
 
             y += rowH;
         }
 
-        DrawCell(g, "Total Number of Days Present", fontBold, tableX, y, colDay + colMorningArr + colMorningDep + colAfternoonArr + colAfternoonDep, rowH);
-        DrawCell(g, "", fontSmall, tableX + colDay + colMorningArr + colMorningDep + colAfternoonArr + colAfternoonDep, y, colOver, rowH);
+        DrawCell(g, "Total Number of Days Present", fontBold, tableX, y, colDay + logColumnsW, rowH);
+        DrawCell(g, "", fontSmall, overX, y, colOver, rowH);
         y += rowH;
 
-        DrawCell(g, "Total Number of Days Absent", fontBold, tableX, y, colDay + colMorningArr + colMorningDep + colAfternoonArr + colAfternoonDep, rowH);
-        DrawCell(g, "", fontSmall, tableX + colDay + colMorningArr + colMorningDep + colAfternoonArr + colAfternoonDep, y, colOver, rowH);
+        DrawCell(g, "Total Number of Days Absent", fontBold, tableX, y, colDay + logColumnsW, rowH);
+        DrawCell(g, "", fontSmall, overX, y, colOver, rowH);
         y += rowH;
 
-        DrawCell(g, "Total Over/Under Time", fontBold, tableX, y, colDay + colMorningArr + colMorningDep + colAfternoonArr + colAfternoonDep, rowH);
-        DrawCell(g, "", fontSmall, tableX + colDay + colMorningArr + colMorningDep + colAfternoonArr + colAfternoonDep, y, colOver, rowH);
+        DrawCell(g, "Total Over/Under Time", fontBold, tableX, y, colDay + logColumnsW, rowH);
+        DrawCell(g, "", fontSmall, overX, y, colOver, rowH);
 
         y += 22;
 
@@ -239,9 +180,66 @@ public static class CscForm48Printer
 
         y += 45;
 
-        Center(g, "______________________________", fontBold, tableX + 220, y, 300);
-        y += 15;
-        Center(g, "Immediate Supervisor", fontSmall, tableX + 220, y, 300);
+        string supervisorName = (data.ImmediateSupervisorName ?? "").Trim();
+        string supervisorPosition = (data.ImmediateSupervisorPosition ?? "").Trim();
+
+        if (!string.IsNullOrWhiteSpace(supervisorName))
+        {
+            Center(g, supervisorName.ToUpperInvariant(), fontBold, tableX + 220, y, 300);
+            g.DrawLine(Pens.Black, tableX + 255, y + 14, tableX + 485, y + 14);
+            y += 15;
+
+            if (!string.IsNullOrWhiteSpace(supervisorPosition))
+                Center(g, supervisorPosition, fontSmall, tableX + 220, y, 300);
+            else
+                Center(g, "Immediate Supervisor", fontSmall, tableX + 220, y, 300);
+        }
+        else
+        {
+            Center(g, "______________________________", fontBold, tableX + 220, y, 300);
+            y += 15;
+            Center(g, "Immediate Supervisor", fontSmall, tableX + 220, y, 300);
+        }
+    }
+
+    private static void DrawTimeCells(
+        Graphics g,
+        EmployeeDtrPrintRow row,
+        Font fontSmall,
+        Font fontBold,
+        int morningX,
+        int morningDepX,
+        int afternoonX,
+        int afternoonDepX,
+        int colMorningArr,
+        int colMorningDep,
+        int colAfternoonArr,
+        int colAfternoonDep,
+        int y,
+        int rowH)
+    {
+        string morningStatus = row.MergedMorningStatus;
+        string afternoonStatus = row.MergedAfternoonStatus;
+
+        if (!string.IsNullOrWhiteSpace(morningStatus))
+        {
+            DrawCell(g, morningStatus, fontBold, morningX, y, colMorningArr + colMorningDep, rowH);
+        }
+        else
+        {
+            DrawCell(g, row.MorningIn ?? "", fontSmall, morningX, y, colMorningArr, rowH);
+            DrawCell(g, row.MorningOut ?? "", fontSmall, morningDepX, y, colMorningDep, rowH);
+        }
+
+        if (!string.IsNullOrWhiteSpace(afternoonStatus))
+        {
+            DrawCell(g, afternoonStatus, fontBold, afternoonX, y, colAfternoonArr + colAfternoonDep, rowH);
+        }
+        else
+        {
+            DrawCell(g, row.AfternoonIn ?? "", fontSmall, afternoonX, y, colAfternoonArr, rowH);
+            DrawCell(g, row.AfternoonOut ?? "", fontSmall, afternoonDepX, y, colAfternoonDep, rowH);
+        }
     }
 
     private static void DrawCell(Graphics g, string text, Font font, int x, int y, int w, int h)

@@ -110,7 +110,9 @@ public class PrintDtrForm : Form
                 d.afternoon_out,
                 d.remarks,
                 e.position_title,
-                e.school_id
+                e.school_id,
+                e.immediate_supervisor_name,
+                e.immediate_supervisor_position
             FROM biometric_dtr d
             LEFT JOIN employees e
                 ON e.employee_no = d.employee_no
@@ -139,6 +141,8 @@ public class PrintDtrForm : Form
             EmployeeName = Convert.ToString(first["employee_name"]) ?? "",
             PositionTitle = Convert.ToString(first["position_title"]) ?? "",
             SchoolId = Convert.ToString(first["school_id"]) ?? "",
+            ImmediateSupervisorName = Convert.ToString(first["immediate_supervisor_name"]) ?? "",
+            ImmediateSupervisorPosition = Convert.ToString(first["immediate_supervisor_position"]) ?? "",
             Month = new DateTime(dtMonth.Value.Year, dtMonth.Value.Month, 1)
         };
 

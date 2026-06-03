@@ -17,6 +17,8 @@ public class SettingsForm : Form
     private readonly TextBox txtDeviceIp = new();
     private readonly NumericUpDown numDevicePort = new();
     private readonly NumericUpDown numMachineNumber = new();
+    private readonly TextBox txtSupervisorName = new();
+    private readonly TextBox txtSupervisorPosition = new();
 
     private readonly TextBox txtDbHost = new();
     private readonly TextBox txtDbName = new();
@@ -83,6 +85,9 @@ public class SettingsForm : Form
         numMachineNumber.Minimum = 1;
         numMachineNumber.Maximum = 999;
         AddRow(panel, "Machine No.:", numMachineNumber);
+
+
+
 
         AddRow(panel, "DB Host:", txtDbHost);
         AddRow(panel, "DB Name:", txtDbName);

@@ -13,6 +13,8 @@ public class EmployeeForm : Form
     private readonly TextBox txtFullName = new();
     private readonly TextBox txtDepartment = new();
     private readonly TextBox txtPosition = new();
+    private readonly TextBox txtImmediateSupervisor = new();
+    private readonly TextBox txtImmediateSupervisorPosition = new();
     private readonly TextBox txtSearch = new();
     private readonly DataGridView grid = new();
 
@@ -38,7 +40,7 @@ public class EmployeeForm : Form
             Padding = new Padding(15)
         };
 
-        main.RowStyles.Add(new RowStyle(SizeType.Absolute, 160));
+        main.RowStyles.Add(new RowStyle(SizeType.Absolute, 220));
         main.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
         main.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
@@ -46,7 +48,7 @@ public class EmployeeForm : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 4,
-            RowCount = 4
+            RowCount = 5
         };
 
         form.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
@@ -69,6 +71,15 @@ public class EmployeeForm : Form
         AddLabel(form, "Position", 2, 1);
         txtPosition.Dock = DockStyle.Fill;
         form.Controls.Add(txtPosition, 3, 1);
+
+
+        AddLabel(form, "Immediate Supervisor", 0, 2);
+        txtImmediateSupervisor.Dock = DockStyle.Fill;
+        form.Controls.Add(txtImmediateSupervisor, 1, 2);
+
+        AddLabel(form, "Supervisor Position", 2, 2);
+        txtImmediateSupervisorPosition.Dock = DockStyle.Fill;
+        form.Controls.Add(txtImmediateSupervisorPosition, 3, 2);
 
         var btnSave = new Button { Text = "Save / Update", Dock = DockStyle.Fill };
         btnSave.Click += (_, _) => SaveEmployee();
@@ -149,6 +160,9 @@ public class EmployeeForm : Form
         ", conn);
 
         cmd.ExecuteNonQuery();
+
+        AddColumnIfMissing(conn, "immediate_supervisor_name", "VARCHAR(255) NULL");
+        AddColumnIfMissing(conn, "immediate_supervisor_position", "VARCHAR(255) NULL");
     }
 
 private void LoadEmployees()
@@ -163,6 +177,8 @@ private void LoadEmployees()
             full_name,
             school_id,
             position_title,
+            immediate_supervisor_name,
+            immediate_supervisor_position,
             CASE
                 WHEN is_active = 1 THEN 'Active'
                 ELSE 'Inactive'
@@ -204,31 +220,47 @@ private void SaveEmployee()
         INSERT INTO employees
         (
             employee_no,
+            biometric_user_id,
             school_id,
             full_name,
             position_title,
+            immediate_supervisor_name,
+            immediate_supervisor_position,
             is_active
         )
         VALUES
         (
             @employee_no,
+            @biometric_user_id,
             @school_id,
             @full_name,
             @position_title,
+            @immediate_supervisor_name,
+            @immediate_supervisor_position,
             1
         )
         ON DUPLICATE KEY UPDATE
             school_id = VALUES(school_id),
             full_name = VALUES(full_name),
             position_title = VALUES(position_title),
+            immediate_supervisor_name = VALUES(immediate_supervisor_name),
+            immediate_supervisor_position = VALUES(immediate_supervisor_position),
             is_active = 1,
             updated_at = NOW();
     ", conn);
 
     cmd.Parameters.AddWithValue("@employee_no", employeeNo);
+
+    // Required because biometric_user_id has no default value in your database.
+    // For now, we keep it equal to employee_no when creating a new employee.
+    // Existing employees will keep their current biometric_user_id because it is not updated below.
+    cmd.Parameters.AddWithValue("@biometric_user_id", employeeNo);
+
     cmd.Parameters.AddWithValue("@school_id", txtDepartment.Text.Trim());
     cmd.Parameters.AddWithValue("@full_name", fullName);
     cmd.Parameters.AddWithValue("@position_title", txtPosition.Text.Trim());
+    cmd.Parameters.AddWithValue("@immediate_supervisor_name", txtImmediateSupervisor.Text.Trim());
+    cmd.Parameters.AddWithValue("@immediate_supervisor_position", txtImmediateSupervisorPosition.Text.Trim());
 
     cmd.ExecuteNonQuery();
 
@@ -294,6 +326,12 @@ private void LoadSelectedToForm()
 
     txtPosition.Text =
         Convert.ToString(grid.CurrentRow.Cells["position_title"].Value) ?? "";
+
+    txtImmediateSupervisor.Text =
+        Convert.ToString(grid.CurrentRow.Cells["immediate_supervisor_name"].Value) ?? "";
+
+    txtImmediateSupervisorPosition.Text =
+        Convert.ToString(grid.CurrentRow.Cells["immediate_supervisor_position"].Value) ?? "";
 }
 
     private void ClearForm()
@@ -302,5 +340,34 @@ private void LoadSelectedToForm()
         txtFullName.Clear();
         txtDepartment.Clear();
         txtPosition.Clear();
+        txtImmediateSupervisor.Clear();
+        txtImmediateSupervisorPosition.Clear();
     }
+    private static void AddColumnIfMissing(
+    MySqlConnection conn,
+    string columnName,
+    string columnDefinition)
+{
+    using var checkCmd = new MySqlCommand(@"
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'employees'
+          AND COLUMN_NAME = @columnName;
+    ", conn);
+
+    checkCmd.Parameters.AddWithValue("@columnName", columnName);
+
+    bool exists =
+        Convert.ToInt32(checkCmd.ExecuteScalar()) > 0;
+
+    if (exists)
+        return;
+
+    using var alterCmd = new MySqlCommand(
+        $"ALTER TABLE employees ADD COLUMN {columnName} {columnDefinition};",
+        conn);
+
+    alterCmd.ExecuteNonQuery();
+}
 }

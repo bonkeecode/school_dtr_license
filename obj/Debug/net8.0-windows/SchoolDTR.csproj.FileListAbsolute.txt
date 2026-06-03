@@ -1,5 +1,0 @@
-E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\bin\Debug\net8.0-windows\SchoolDTR.exe
-E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\bin\Debug\net8.0-windows\SchoolDTR.dll
-E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\bin\Debug\net8.0-windows\Microsoft.Extensions.Logging.Abstractions.dll
-E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\bin\Debug\net8.0-windows\MySqlConnector.dll
-E:\CityMatiNHS_DTR_System_Starter\src\SchoolDTR\school_dtr_license\bin\Debug\net8.0-windows\runtimes\win\lib\net8.0\System.Management.dll

@@ -249,21 +249,27 @@ public class DtrViewerForm : Form
                 using var cmd = conn.CreateCommand();
                 cmd.CommandText = @"
                     SELECT
-                        employee_no,
-                        employee_name,
-                        employee_id,
-                        '' AS school_id,
-                        log_date AS work_date,
-                        morning_in,
-                        morning_out,
-                        afternoon_in,
-                        afternoon_out,
-                        remarks
-                    FROM biometric_dtr
-                    WHERE biometric_user_id = @biometricUserId
-                        AND YEAR(log_date) = @year
-                        AND MONTH(log_date) = @month
-                    ORDER BY log_date;
+                        COALESCE(NULLIF(e.employee_no, ''), NULLIF(d.employee_no, ''), NULLIF(d.employee_id, '')) AS employee_no,
+                        COALESCE(NULLIF(e.full_name, ''), d.employee_name) AS employee_name,
+                        d.employee_id,
+                        COALESCE(e.school_id, '') AS school_id,
+                        COALESCE(e.position_title, '') AS position_title,
+                        COALESCE(e.immediate_supervisor_name, '') AS immediate_supervisor_name,
+                        COALESCE(e.immediate_supervisor_position, '') AS immediate_supervisor_position,
+                        d.log_date AS work_date,
+                        d.morning_in,
+                        d.morning_out,
+                        d.afternoon_in,
+                        d.afternoon_out,
+                        d.remarks
+                    FROM biometric_dtr d
+                    LEFT JOIN employees e
+                        ON e.biometric_user_id = d.biometric_user_id
+                        OR e.employee_no = COALESCE(NULLIF(d.employee_no, ''), NULLIF(d.employee_id, ''))
+                    WHERE d.biometric_user_id = @biometricUserId
+                        AND YEAR(d.log_date) = @year
+                        AND MONTH(d.log_date) = @month
+                    ORDER BY d.log_date;
                 ";
 
                 cmd.Parameters.AddWithValue(
@@ -292,8 +298,10 @@ public class DtrViewerForm : Form
                 {
                     EmployeeNo = Convert.ToString(first["employee_no"]) ?? "",
                     EmployeeName = Convert.ToString(first["employee_name"]) ?? "",
-                    PositionTitle = "",
+                    PositionTitle = Convert.ToString(first["position_title"]) ?? "",
                     SchoolId = Convert.ToString(first["school_id"]) ?? "",
+                    ImmediateSupervisorName = Convert.ToString(first["immediate_supervisor_name"]) ?? "",
+                    ImmediateSupervisorPosition = Convert.ToString(first["immediate_supervisor_position"]) ?? "",
                     Month = new DateTime(
                         dtMonth.Value.Year,
                         dtMonth.Value.Month,
@@ -548,21 +556,27 @@ private EmployeeDtrPrintData? GetSelectedEmployeePrintData()
     using var cmd = conn.CreateCommand();
     cmd.CommandText = @"
         SELECT
-            employee_no,
-            employee_name,
-            employee_id,
-            '' AS school_id,
-            log_date AS work_date,
-            morning_in,
-            morning_out,
-            afternoon_in,
-            afternoon_out,
-            remarks
-        FROM biometric_dtr
-        WHERE biometric_user_id = @biometricUserId
-            AND YEAR(log_date) = @year
-            AND MONTH(log_date) = @month
-        ORDER BY log_date;
+            COALESCE(NULLIF(e.employee_no, ''), NULLIF(d.employee_no, ''), NULLIF(d.employee_id, '')) AS employee_no,
+            COALESCE(NULLIF(e.full_name, ''), d.employee_name) AS employee_name,
+            d.employee_id,
+            COALESCE(e.school_id, '') AS school_id,
+            COALESCE(e.position_title, '') AS position_title,
+            COALESCE(e.immediate_supervisor_name, '') AS immediate_supervisor_name,
+            COALESCE(e.immediate_supervisor_position, '') AS immediate_supervisor_position,
+            d.log_date AS work_date,
+            d.morning_in,
+            d.morning_out,
+            d.afternoon_in,
+            d.afternoon_out,
+            d.remarks
+        FROM biometric_dtr d
+        LEFT JOIN employees e
+            ON e.biometric_user_id = d.biometric_user_id
+            OR e.employee_no = COALESCE(NULLIF(d.employee_no, ''), NULLIF(d.employee_id, ''))
+        WHERE d.biometric_user_id = @biometricUserId
+            AND YEAR(d.log_date) = @year
+            AND MONTH(d.log_date) = @month
+        ORDER BY d.log_date;
     ";
 
     cmd.Parameters.AddWithValue("@biometricUserId", biometricUserId);
@@ -585,8 +599,10 @@ private EmployeeDtrPrintData? GetSelectedEmployeePrintData()
     {
         EmployeeNo = Convert.ToString(first["employee_no"]) ?? "",
         EmployeeName = Convert.ToString(first["employee_name"]) ?? "",
-        PositionTitle = "",
+        PositionTitle = Convert.ToString(first["position_title"]) ?? "",
         SchoolId = Convert.ToString(first["school_id"]) ?? "",
+        ImmediateSupervisorName = Convert.ToString(first["immediate_supervisor_name"]) ?? "",
+        ImmediateSupervisorPosition = Convert.ToString(first["immediate_supervisor_position"]) ?? "",
         Month = new DateTime(dtMonth.Value.Year, dtMonth.Value.Month, 1)
     };
 

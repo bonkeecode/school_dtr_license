@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("KeyMaker")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e940d333e1d5a2dc629c406872b000295033e0dd")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+811d3a1db03f2df39b29aef576e8705e262e281d")]
 [assembly: System.Reflection.AssemblyProductAttribute("KeyMaker")]
 [assembly: System.Reflection.AssemblyTitleAttribute("KeyMaker")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

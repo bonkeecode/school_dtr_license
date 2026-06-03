@@ -19,7 +19,7 @@ public class EventForm : Form
     private readonly CheckedListBox employeeList = new();
 
     private readonly DataGridView grid = new();
-
+    private readonly ComboBox cboDayScope = new();
     public EventForm()
     {
         Text = "Events / Holidays";
@@ -43,7 +43,7 @@ public class EventForm : Form
             Padding = new Padding(15)
         };
 
-        main.RowStyles.Add(new RowStyle(SizeType.Absolute, 180));
+        main.RowStyles.Add(new RowStyle(SizeType.Absolute, 220));
         main.RowStyles.Add(new RowStyle(SizeType.Absolute, 230));
         main.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
@@ -51,7 +51,7 @@ public class EventForm : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 4,
-            RowCount = 4
+            RowCount = 5
         };
 
         form.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
@@ -91,10 +91,24 @@ public class EventForm : Form
         });
         cboType.SelectedIndex = 0;
         form.Controls.Add(cboType, 1, 2);
+        
+        AddLabel(form, "Coverage", 2, 2);
 
-        AddLabel(form, "Remarks", 2, 2);
+        cboDayScope.Dock = DockStyle.Fill;
+        cboDayScope.DropDownStyle = ComboBoxStyle.DropDownList;
+        cboDayScope.Items.AddRange(new object[]
+        {
+            "Whole Day",
+            "Morning Only",
+            "Afternoon Only"
+        });
+        cboDayScope.SelectedIndex = 0;
+
+        form.Controls.Add(cboDayScope, 3, 2);
+        AddLabel(form, "Remarks", 0, 3);
         txtRemarks.Dock = DockStyle.Fill;
-        form.Controls.Add(txtRemarks, 3, 2);
+        form.Controls.Add(txtRemarks, 1, 3);
+        form.SetColumnSpan(txtRemarks, 3);
 
         var btnSave = new Button
         {
@@ -112,8 +126,8 @@ public class EventForm : Form
         };
         btnDelete.Click += (_, _) => DeleteSelected();
 
-        form.Controls.Add(btnSave, 1, 3);
-        form.Controls.Add(btnDelete, 3, 3);
+        form.Controls.Add(btnSave, 1, 4);
+        form.Controls.Add(btnDelete, 3, 4);
 
         var assignmentPanel = new TableLayoutPanel
         {
@@ -220,6 +234,21 @@ public class EventForm : Form
         ", conn);
 
         cmdEvents.ExecuteNonQuery();
+        try
+        {
+            using var alterCmd = new MySqlCommand(@"
+                ALTER TABLE dtr_events
+                ADD COLUMN day_scope VARCHAR(20)
+                NOT NULL DEFAULT 'WHOLE_DAY'
+                AFTER event_type;
+            ", conn);
+
+            alterCmd.ExecuteNonQuery();
+        }
+        catch
+        {
+            // already exists
+        }
 
         using var cmdAssignments = new MySqlCommand(@"
             CREATE TABLE IF NOT EXISTS dtr_event_assignments (
@@ -351,14 +380,35 @@ public class EventForm : Form
         conn.Open();
 
         using var tx = conn.BeginTransaction();
-
+        string dayScope = cboDayScope.SelectedItem?.ToString() switch
+        {
+            "Morning Only" => "MORNING",
+            "Afternoon Only" => "AFTERNOON",
+            _ => "WHOLE_DAY"
+        };
         try
         {
             using var cmd = new MySqlCommand(@"
                 INSERT INTO dtr_events
-                    (school_id, event_title, date_from, date_to, event_type, remarks)
-                VALUES
-                    ('ASSIGNED', @title, @from, @to, @type, @remarks);
+                (
+                    school_id,
+                    event_title,
+                    date_from,
+                    date_to,
+                    event_type,
+                    day_scope,
+                    remarks
+                )
+            VALUES
+                (
+                    'ASSIGNED',
+                    @title,
+        @from,
+        @to,
+        @type,
+        @day_scope,
+        @remarks
+    );
                 SELECT LAST_INSERT_ID();
             ", conn, tx);
 
@@ -367,7 +417,8 @@ public class EventForm : Form
             cmd.Parameters.AddWithValue("@to", dtTo.Value.Date);
             cmd.Parameters.AddWithValue("@type", cboType.Text);
             cmd.Parameters.AddWithValue("@remarks", txtRemarks.Text.Trim());
-
+            cmd.Parameters.AddWithValue("@day_scope", dayScope);
+            
             int eventId = Convert.ToInt32(cmd.ExecuteScalar());
 
             foreach (var checkedItem in employeeList.CheckedItems)

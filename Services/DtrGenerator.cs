@@ -31,6 +31,7 @@ public static class DtrGenerator
                 UpsertDtrRow(
                     conn,
                     employeeNo,
+                    biometricUserId,
                     fullName,
                     date,
                     slots.MorningIn,
@@ -50,6 +51,8 @@ public static class DtrGenerator
             CREATE TABLE IF NOT EXISTS biometric_dtr (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 employee_id VARCHAR(50) NOT NULL,
+                employee_no VARCHAR(50) NULL,
+                biometric_user_id VARCHAR(50) NULL,
                 employee_name VARCHAR(255) NOT NULL,
                 log_date DATE NOT NULL,
                 morning_in VARCHAR(50) NULL,
@@ -59,11 +62,81 @@ public static class DtrGenerator
                 remarks VARCHAR(255) NULL,
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME NULL,
-                UNIQUE KEY uq_employee_date (employee_id, log_date)
+                UNIQUE KEY uq_employee_date (employee_id, log_date),
+                KEY idx_employee_no (employee_no),
+                KEY idx_biometric_user_id (biometric_user_id),
+                KEY idx_log_date (log_date)
             );
         ", conn);
 
         cmd.ExecuteNonQuery();
+
+        AddColumnIfMissing(conn, "biometric_dtr", "employee_no", "VARCHAR(50) NULL");
+        AddColumnIfMissing(conn, "biometric_dtr", "biometric_user_id", "VARCHAR(50) NULL");
+        AddColumnIfMissing(conn, "biometric_dtr", "updated_at", "DATETIME NULL");
+        AddIndexIfMissing(conn, "biometric_dtr", "idx_employee_no", "employee_no");
+        AddIndexIfMissing(conn, "biometric_dtr", "idx_biometric_user_id", "biometric_user_id");
+        AddIndexIfMissing(conn, "biometric_dtr", "idx_log_date", "log_date");
+    }
+
+    private static void AddColumnIfMissing(
+        MySqlConnection conn,
+        string table,
+        string column,
+        string definition)
+    {
+        using var check = new MySqlCommand(@"
+            SELECT COUNT(*)
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = @table
+              AND COLUMN_NAME = @column;
+        ", conn);
+
+        check.Parameters.AddWithValue("@table", table);
+        check.Parameters.AddWithValue("@column", column);
+
+        var exists = Convert.ToInt32(check.ExecuteScalar()) > 0;
+
+        if (!exists)
+        {
+            using var alter = new MySqlCommand(
+                $"ALTER TABLE `{table}` ADD COLUMN `{column}` {definition};",
+                conn
+            );
+
+            alter.ExecuteNonQuery();
+        }
+    }
+
+    private static void AddIndexIfMissing(
+        MySqlConnection conn,
+        string table,
+        string indexName,
+        string columnName)
+    {
+        using var check = new MySqlCommand(@"
+            SELECT COUNT(*)
+            FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = @table
+              AND INDEX_NAME = @indexName;
+        ", conn);
+
+        check.Parameters.AddWithValue("@table", table);
+        check.Parameters.AddWithValue("@indexName", indexName);
+
+        var exists = Convert.ToInt32(check.ExecuteScalar()) > 0;
+
+        if (!exists)
+        {
+            using var alter = new MySqlCommand(
+                $"ALTER TABLE `{table}` ADD INDEX `{indexName}` (`{columnName}`);",
+                conn
+            );
+
+            alter.ExecuteNonQuery();
+        }
     }
 
     private static DataTable LoadActiveEmployees(MySqlConnection conn)
@@ -172,6 +245,7 @@ public static class DtrGenerator
     private static void UpsertDtrRow(
         MySqlConnection conn,
         string employeeNo,
+        string biometricUserId,
         string employeeName,
         DateTime logDate,
         string morningIn,
@@ -183,6 +257,8 @@ public static class DtrGenerator
             INSERT INTO biometric_dtr
                 (
                     employee_id,
+                    employee_no,
+                    biometric_user_id,
                     employee_name,
                     log_date,
                     morning_in,
@@ -194,6 +270,8 @@ public static class DtrGenerator
             VALUES
                 (
                     @employee_id,
+                    @employee_no,
+                    @biometric_user_id,
                     @employee_name,
                     @log_date,
                     @morning_in,
@@ -203,6 +281,8 @@ public static class DtrGenerator
                     ''
                 )
             ON DUPLICATE KEY UPDATE
+                employee_no = VALUES(employee_no),
+                biometric_user_id = VALUES(biometric_user_id),
                 employee_name = VALUES(employee_name),
                 morning_in = VALUES(morning_in),
                 morning_out = VALUES(morning_out),
@@ -213,6 +293,8 @@ public static class DtrGenerator
         ", conn);
 
         cmd.Parameters.AddWithValue("@employee_id", employeeNo);
+        cmd.Parameters.AddWithValue("@employee_no", employeeNo);
+        cmd.Parameters.AddWithValue("@biometric_user_id", biometricUserId);
         cmd.Parameters.AddWithValue("@employee_name", employeeName);
         cmd.Parameters.AddWithValue("@log_date", logDate.Date);
         cmd.Parameters.AddWithValue("@morning_in", morningIn);

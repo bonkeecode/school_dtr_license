@@ -1,3 +1,4 @@
+
 {
   "payload": {
     "licenses": [
@@ -5,17 +6,24 @@
         "school_id": "305680",
         "machine_hash": "B03FC9A16CAD1AE18B843A978AA2482381F0A4FF55F6735B7C7C7DD76526AF3F",
         "school_name": "CMNHS",
-        "expires_on": "2026-06-30",
+        "expires_on": "2026-08-30",
         "is_active": true
       },
       {
         "school_id": "305680",
         "machine_hash": "A100E219C3805BAC29BD2135790718809C3A42ABEBE1F15301E3A7E98FD28B6F",
         "school_name": "CMNHS",
-        "expires_on": "2026-06-30",
+        "expires_on": "2026-08-30",
+        "is_active": true
+      },
+      {
+        "school_id": "305680",
+        "machine_hash": "A12FF0FEBC596CAEE337B4F56856D06475363CBC16E3A3521FC281D5708A5DDD",
+        "school_name": "CMNHS",
+        "expires_on": "2026-08-30",
         "is_active": true
       }
     ]
   },
-  "signature": "g5iAaWgmaibLsc7Cu2lDWdPYb3VKMeLaOwKgFsKKxKs4kHWZ6UOxsz8mekWmaHhlxnjKwKWa5Z1eHNmQd4v1c3jLwkdyWopPzeHVFI3ylfd8Q7iCssUqhygcCQU7p\u002Bol5UVIOCUovj9kIhTBmy0tEhAInFLkfKIduaON5EQI8khkTlDbLbihw5HlCPPU\u002B4o4P4H5lDALxrjK\u002B7q7OoqCEL0SQPWGPGtLsWgtzQB6/wk3if0TuNxOOQ7v10wg2XaEDOAY0m3nwDahedueYQ6j4fCFyyZ6si9vIseZwvApp5fsuJ\u002BPAexxQYFgj01MvbUcAYx22MkiYYH5Dycpmsj9Hw=="
+  "signature": "eCe/Z2w7mhplu5TrYrcyjK3/P23tT7W8767J9qHAXJbOYbl7BWKQJZDV/QSkyEe8BqaJ63cNpEmvs0thmUDn1cOvvXzLZES1E3c2HcC+sD0i24FF0bY0SGazMyALBp8iqtSs5IEi7UuhSsI1zsc3zArYvHHNu2c2/d47iKK6IB+yqUamrF1CQQNL/lB2d1+iTaT/4URVpRBiII9fPQgt2YdnQybx47rSCpz8tdiZ7wvYwqENOamd9CwnyWL+vY5d8SBPyg5XwFE31ngmM0/xLb4n4vxhi4z1lonROUynil7VFywd6IfH9cJ0Wizzb8QNDHVzZebyAKNWrgVhenhGyQ=="
 }

@@ -3,20 +3,7 @@
   "payload": {
     "licenses": [
     
-      {
-        "school_id": "305680",
-        "machine_hash": "A12FF0FEBC596CAEE337B4F56856D06475363CBC16E3A3521FC281D5708A5DDD",
-        "school_name": "CMNHS",
-        "expires_on": "2026-10-30",
-        "is_active": true
-      },
-      {
-        "school_id": "305680",
-        "machine_hash": "559005f6f266efc02b0fae020724081847801d8c889af439db5e27b6577f0e90",
-        "school_name": "CMNHS",
-        "expires_on": "2026-10-30",
-        "is_active": true
-      }
+
     ]
   },
   "signature": "50bcpAM1zdQu0ZSyj7pTxKt1ogKV6M1Gh+DYtvjHcn/w4Bw5dxte7AWBaMrRa4wkqD7qe02M9l4mtSVtLw5N1a/3IdOQI2igOF+RMWi+zXCEGTkJZD+Lezfad0+qbtYmODbs2210OI8Rg6JZinDjDHbRlkVCFbA+WymHFTFZLeVbeZBmhpCVzuD3TR/VS1eJVQUlns9lbBPyNXmeggg2MhWbr1d4d/T2aZxyHOlu0LH/mZ7FclXjlih8+YKrUBF9jZ48Kfx1HD9O/UJzx7jU2AAENJ1oODGpLUtXTx3FSgPpWYvSi08HG0nZu2t4B5sB4b1Auapp4P5hENPtNmLIlg=="

@@ -1,10 +1,35 @@
-
 {
-  "payload": {
-    "licenses": [
-      
-
-    ]
-  },
-  "signature": "qzkHBOen5Uv57z1v6TvmwXdVmmvmPa5YAQoNGo1Huy8QKnvFTo863MEzicNNiMoVFuL2YTJrOr4ldRnf5Yx2mBiOp1BGg6Dyb7jvyL5V/FLqPIKbkQeYc21Ajl+6Vb6/+iq1gl6xdQb8fX6wxU5wr8iBMUFlL0jpJFmpRKRkH26/tMCmUyK6rvifROQSjzUwINCVultRUvJu0rJFNhgh+8G6fQjNuB/oviDlTdYI+jixaigcjVJ1jeHgeVdWAQ7LK6dRpl3kjcu5WP63Jm8fehe6vo43TFsi7YVYUm4bymq242RQmpLMEKA8+cp4sgP7c96rj4Y18SZ9TrsK0hoRbw=="
+    "payload":  {
+                    "licenses":  [
+                                     {
+                                         "school_id":  "305680",
+                                         "machine_hash":  "B03FC9A16CAD1AE18B843A978AA2482381F0A4FF55F6735B7C7C7DD76526AF3F",
+                                         "school_name":  "CMNHS",
+                                         "expires_on":  "2026-10-30",
+                                         "is_active":  true
+                                     },
+                                     {
+                                         "school_id":  "305680",
+                                         "machine_hash":  "A100E219C3805BAC29BD2135790718809C3A42ABEBE1F15301E3A7E98FD28B6F",
+                                         "school_name":  "CMNHS",
+                                         "expires_on":  "2026-10-30",
+                                         "is_active":  true
+                                     },
+                                     {
+                                         "school_id":  "305680",
+                                         "machine_hash":  "A12FF0FEBC596CAEE337B4F56856D06475363CBC16E3A3521FC281D5708A5DDD",
+                                         "school_name":  "CMNHS",
+                                         "expires_on":  "2026-10-30",
+                                         "is_active":  true
+                                     },
+                                     {
+                                         "school_id":  "305680",
+                                         "machine_hash":  "559005f6f266efc02b0fae020724081847801d8c889af439db5e27b6577f0e90",
+                                         "school_name":  "CMNHS",
+                                         "expires_on":  "2026-10-30",
+                                         "is_active":  true
+                                     }
+                                 ]
+                },
+    "signature":  "qzkHBOen5Uv57z1v6TvmwXdVmmvmPa5YAQoNGo1Huy8QKnvFTo863MEzicNNiMoVFuL2YTJrOr4ldRnf5Yx2mBiOp1BGg6Dyb7jvyL5V/FLqPIKbkQeYc21Ajl+6Vb6/+iq1gl6xdQb8fX6wxU5wr8iBMUFlL0jpJFmpRKRkH26/tMCmUyK6rvifROQSjzUwINCVultRUvJu0rJFNhgh+8G6fQjNuB/oviDlTdYI+jixaigcjVJ1jeHgeVdWAQ7LK6dRpl3kjcu5WP63Jm8fehe6vo43TFsi7YVYUm4bymq242RQmpLMEKA8+cp4sgP7c96rj4Y18SZ9TrsK0hoRbw=="
 }

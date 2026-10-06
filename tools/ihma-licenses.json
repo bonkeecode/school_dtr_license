@@ -1,7 +1,15 @@
 {
   "payload": {
     "app": "IHMA",
-    "licenses": []
+    "licenses": [
+      {
+        "school_id": "IHMA",
+        "school_name": "IHMA",
+        "machine_hash": "018EFDF3C3D2EB19ACE51B450D64764E11FEBDD2C67598A0BC8F6003869C6B29",
+        "expires_on": "2027-12-31",
+        "is_active": true
+      }
+    ]
   },
-  "signature": "E7k8+lKbKNAxXwSVJhvlVRzJWqSToAblvnL0L/nVB5xTDE27g8qwlrOyWUYr0CKmXuVdwetcLe0D6p5QaeTQqjwRbGhUn9OwaCzDuFm+DuRkZdLMZ1eqQuy91qCHtF4CMB4REyPCub2F+BtgxgM/zP52Lh+8KDvnrWQh9gVEDEWhrWiff44ung/woEwJQ9qnXsdix8PpqZiwlTovZhX6trED539OarjAFV9/2N7V3oa/69pSqaGDHkh36eC/1qU4PGGtK4d6ACYC9xrZmxJ2nXSJp5Oc4s137EgQTJwqWAu26Vpe8Q908hAldCwdS5h32tHVa3d54tZ0Tql7hUG0Jheuu27c9HILgRbgU3awvnc6wm/+PF157/AoSEVqY6MPLU9W58YOyOCsh+cp6nLutDezEgfVJdOJv10F4V3je/MdNVpBjYjxAx/472zilkA1VfFR6Xy3V7ga2BqFebwCfpV7yGXo1qDTtxQ8MixIP0dvofMdW6JjtniprWRz9sFh"
+  "signature": "eoHNCYzZxKQlUEkhPoV/7mQPCNBWBu7RkGfD9tUGmuF8cmRceFOFpdEC2fGQT3ZYfnTYMN0tNUC0eR0t7JNb/PGBo8e\u002B/4/EZivcbZJTFXroYok8jtHHe1XNp5U6G3NbUxuiMXs0vMUK/0q9aHlYSOikryNWnP0kajtPkJK\u002BLbKyk5B\u002BxABlILPLlmKx6GCTDxnO\u002BBFcqLbHsU0ydmLLj6902hro4o\u002BwBcaaEOQXYRETYjoiq6RuwOstBRWcvon6t9bX3Cr\u002BASrZ5L7Rlh3IDKZNDsZHqigInD/1kpItSS2C1ZPXK7D4iBHjquYrpQjRJnhewBVUr\u002BuVu/IX7EcCkyDCCw/sumyzgCI1hVOZDG8rWFZe4MZLc2KNvLZaCFZ4oluBoROCae5TcjvQ3bA9mP8XOFV2Q8PDFc1npzXdL6pYpvgF3ht16zNPuWb1I0/GsyESi2pXU3EXtApz\u002B96FB1P6r5XjlFCsHVTBGQm5kMO5kBHeknzlR7RfCGpRNonz"
 }
